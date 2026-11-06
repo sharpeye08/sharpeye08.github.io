@@ -960,6 +960,34 @@ button.prop:focus-visible {
 }
 
 /* ------------------------------------------------------------------
+   Dark mode: the desk in the evening. Only the lamp is on, so things
+   catch less light the further they lie from it (--lit, from js/scene.js;
+   the wood is dimmed the same way in css/desk.css). Paper is dimmed, not
+   inverted, so nothing glares.
+------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .desk > :is(.pad, .card, .sticky, .paper, .polaroid, .prop) {
+    filter: brightness(var(--lit, 0.8));
+  }
+
+  /* the card a click opens is for reading */
+  .desk > .note {
+    filter: brightness(0.9);
+  }
+
+  body:is(.scene-table, .scene-paper) .unit {
+    filter: brightness(calc(var(--lit, 0.8) + 0.06));
+  }
+
+  body.scene-moving .unit {
+    transition:
+      transform var(--lift) var(--scene-ease),
+      scale 220ms ease,
+      filter var(--lift) ease;
+  }
+}
+
+/* ------------------------------------------------------------------
    Put the console down
 ------------------------------------------------------------------- */
 .putdown,

@@ -211,6 +211,17 @@
 
   // the console's centre in the frame; things slide away from it
   let hub = { x: 0, y: 0 };
+  // where the frame sits on the page, for the lamp (css/desk.css): it stands
+  // at (-14u, -18u) from the page's corner, its light reaching ~150u x 112u
+  let frameAt = { x: 0, y: 0, f: 1, u: 15 };
+
+  // how much lamp light falls here (dark mode dims things by it: --lit)
+  function lit(x, y) {
+    const { u } = frameAt;
+    const px = frameAt.x + x * frameAt.f + 14 * u;
+    const py = frameAt.y + y * frameAt.f + 18 * u;
+    return (0.92 - 0.3 * Math.min(1, Math.hypot(px / (150 * u), py / (112 * u)))).toFixed(3);
+  }
 
   function place(el, x, y, w, h, r) {
     if (!el) return;
@@ -225,6 +236,7 @@
     const d = Math.hypot(dx, dy) || 1;
     st.setProperty("--ax", `${fix((dx / d) * ASIDE)}px`);
     st.setProperty("--ay", `${fix((dy / d) * ASIDE)}px`);
+    st.setProperty("--lit", lit(x, y));
   }
 
   function layout() {
@@ -253,6 +265,8 @@
     const c = L.console;
     const ch = (c.w * u.h) / u.w;
     hub = { x: c.x, y: c.y };
+    frameAt = { x: r.x + ox, y: r.y + oy, f, u: Math.min(Math.max(innerWidth, innerHeight) / 100, 15) };
+    unit.style.setProperty("--lit", lit(c.x, c.y));
     place(pick, c.x, c.y, c.w, ch, CON_TURN);
     pick.style.setProperty("--round", `${fix(c.w * 0.07)}px`);
     const ux = u.x - r.x + u.w / 2;

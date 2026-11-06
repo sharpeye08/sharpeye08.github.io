@@ -25,6 +25,16 @@
   --measure: 66ch; /* about 75 characters of body text per line */
 }
 
+/* dark mode: the same sheet in the evening, a dimmer warm paper (ink is
+   12.8:1 on it, muted 5.8:1, indigo 8.8:1) so it doesn't glare */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #e8dfcf;
+    --rule: #d2c8b6;
+    --peri-wash: #dcdcec;
+  }
+}
+
 *,
 *::before,
 *::after {
