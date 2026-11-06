@@ -1,0 +1,1164 @@
+/* ------------------------------------------------------------------
+   Scene: a flat-lay on the desk, seen from straight above. The console,
+   a printed sheet, a notepad with the headline, a business card with the
+   links, a sticky note, a polaroid, and rendered props (a mug, a pen, a
+   pencil, a watch, glasses, an earbuds case, a rubber duck, paper clips). Light
+   comes from the top left, so everything has a tight contact shadow and a
+   soft cast shadow to the bottom right (thicker things cast further).
+   js/scene.js picks a layout (wide, tall, phone), scales the design frame
+   (.desk) to fit the screen, and sets on each object --x/--y/--w/--h/--r.
+   It also transforms the real console (.unit) to lie where the design says.
+   Body states: scene-table, scene-hand, scene-paper, plus scene-moving
+   during a transition, scene-reading while the paper is up, and
+   scene-landing while it goes back down. The lifted sheet (.reader) is
+   built by JS.
+------------------------------------------------------------------- */
+:root {
+  --lift: 750ms;
+  --scene-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --settle-ease: cubic-bezier(0.45, 0, 0.2, 1);
+  --amber: #ffb454;
+  --sheet: #fbf8f1;
+  --ink: #1d1a24;
+  --pen-ink: #22294a; /* blue-black handwriting */
+  --pencil: #3b2c1a;
+  --room-ink: #1a110c; /* buttons */
+  --room-line: #4a3324;
+  --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+  --print: "Kalam", "Segoe Print", "Bradley Hand", cursive;
+}
+
+.room {
+  position: relative;
+  overflow-x: clip; /* nothing mid-flight may cause a sideways scroll */
+}
+
+/* while the console is down (or on its way) only the desk's own things react */
+body.scene-table #stage,
+body.scene-paper #stage,
+body.scene-moving #stage {
+  pointer-events: none;
+}
+
+#stage:focus {
+  outline: none;
+}
+
+/* the page's own text is for the console in hand; at the desk it is on the notepad and the card */
+body.scene-table :is(.intro > *, .foot),
+body.scene-paper :is(.intro > *, .foot) {
+  visibility: hidden;
+  opacity: 0;
+}
+
+body.scene-moving.scene-hand :is(.intro > *, .foot) {
+  transition:
+    opacity 420ms ease 480ms,
+    visibility 0s 480ms;
+}
+
+body.scene-moving.scene-table :is(.intro > *, .foot) {
+  transition:
+    opacity 200ms ease,
+    visibility 0s 200ms;
+}
+
+/* ------------------------------------------------------------------
+   The console on the desk; the cartridges are put away
+------------------------------------------------------------------- */
+body.scene-table .slot,
+body.scene-paper .slot {
+  opacity: 0;
+  visibility: hidden;
+  scale: 0.86;
+}
+
+/* cqw: drawn at console size, then scaled down with it */
+body.scene-table .console,
+body.scene-paper .console {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 1.5px 0 0 rgba(255, 255, 255, 0.12),
+    inset -1.5px 0 0 rgba(0, 0, 0, 0.06),
+    0 0.5cqw 1cqw rgba(15, 7, 3, 0.55),
+    3.6cqw 5.4cqw 9.5cqw rgba(15, 7, 3, 0.45);
+}
+
+/* hover: it lifts a hair off the desk */
+body.scene-table .unit {
+  transition: scale 220ms ease;
+}
+
+body.scene-table .console {
+  transition: box-shadow 220ms ease;
+}
+
+body.scene-table:has(.pickup:hover, .pickup:focus-visible, .sticky:hover) .unit {
+  scale: 1.015;
+}
+
+body.scene-table:has(.pickup:hover, .pickup:focus-visible, .sticky:hover) .console {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 1.5px 0 0 rgba(255, 255, 255, 0.12),
+    inset -1.5px 0 0 rgba(0, 0, 0, 0.06),
+    0 0.8cqw 1.8cqw rgba(15, 7, 3, 0.5),
+    5cqw 7.5cqw 13cqw rgba(15, 7, 3, 0.42);
+}
+
+/* pick up: the console rises toward the camera, its shadow grows, softens and
+   moves out; then the cartridges come out one by one */
+body.scene-moving .unit {
+  transition:
+    transform var(--lift) var(--scene-ease),
+    scale 220ms ease;
+}
+
+body.scene-moving .console {
+  transition: box-shadow var(--lift) var(--scene-ease);
+}
+
+body.scene-moving.scene-hand .slot {
+  transition:
+    opacity 250ms ease,
+    scale 250ms var(--scene-ease),
+    visibility 0s;
+  transition-delay: calc(var(--lift) + var(--i, 0) * 40ms);
+}
+
+/* put down: the cartridges go first, then the console settles onto the desk */
+body.scene-moving.scene-table .slot {
+  transition:
+    opacity 180ms ease,
+    scale 180ms ease,
+    visibility 0s;
+  transition-delay: calc(var(--i, 0) * 20ms), calc(var(--i, 0) * 20ms), calc(180ms + var(--i, 0) * 20ms);
+}
+
+body.scene-moving.scene-table .unit {
+  transition-timing-function: var(--settle-ease), ease;
+  transition-delay: 260ms, 0s;
+}
+
+body.scene-moving.scene-table .console {
+  transition-timing-function: var(--settle-ease);
+  transition-delay: 260ms;
+}
+
+/* ------------------------------------------------------------------
+   The desk: a design frame scaled to fit the screen
+------------------------------------------------------------------- */
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+body.scene-table .scene,
+body.scene-moving .scene {
+  visibility: visible;
+}
+
+.desk {
+  position: absolute;
+  left: var(--desk-x, 0);
+  top: var(--desk-y, 0);
+  width: var(--desk-w, 1240px);
+  height: var(--desk-h, 860px);
+  transform: scale(var(--desk-f, 1));
+  transform-origin: 0 0;
+}
+
+.desk > * {
+  position: absolute;
+  left: var(--x, 0);
+  top: var(--y, 0);
+  width: var(--w, 0);
+  height: var(--h, 0);
+  rotate: var(--r, 0deg);
+  margin: 0;
+}
+
+.desk > [hidden] {
+  display: none;
+}
+
+/* everything slides a little aside, away from the console, as the console
+   or the paper comes up (js/scene.js sets --ax/--ay from where each lies) */
+body.scene-hand .desk > *,
+body.scene-paper .desk > :not(.paper, .pickup) {
+  opacity: 0;
+  translate: var(--ax, 0) var(--ay, 0);
+}
+
+body.scene-moving .desk > * {
+  transition:
+    opacity 360ms ease,
+    translate var(--lift) var(--scene-ease);
+}
+
+/* coming back: they slide in while the console settles */
+body.scene-moving.scene-table .desk > * {
+  transition-timing-function: ease, var(--settle-ease);
+  transition-delay: calc(260ms + var(--lift) * 0.3), 260ms;
+}
+
+/* the paper itself: gone the moment the big sheet takes over, back as it lands */
+body.scene-reading .paper {
+  opacity: 0;
+}
+
+body.scene-moving.scene-reading .paper {
+  transition: opacity 120ms ease;
+}
+
+body.scene-moving.scene-landing .paper {
+  transition: opacity 120ms ease calc(var(--lift) - 120ms);
+}
+
+body.scene-moving.scene-landing .desk > :not(.paper, .pickup) {
+  transition-delay: calc(var(--lift) * 0.35), 0s;
+}
+
+/* ------------------------------------------------------------------
+   The console's invisible button, lying exactly over it
+------------------------------------------------------------------- */
+.pickup {
+  z-index: 6;
+  padding: 0;
+  border: 0;
+  border-radius: var(--round, 0);
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pickup:focus-visible,
+.paper:focus-visible {
+  outline-offset: 6px;
+}
+
+/* ------------------------------------------------------------------
+   Notepad: the headline in handwriting, the intro printed by hand
+------------------------------------------------------------------- */
+.pad {
+  --rule: calc(var(--text, 15px) * 1.6);
+  z-index: 1;
+  padding: calc(var(--rule) * 1.55) 24px 0 34px;
+  overflow: hidden;
+  border-radius: 3px 3px 4px 4px;
+  color: var(--pen-ink);
+  background:
+    linear-gradient(90deg, transparent 24px, rgba(200, 72, 60, 0.32) 24px 25.5px, transparent 25.5px),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--rule) - 1px),
+      rgba(64, 96, 150, 0.2) calc(var(--rule) - 1px) var(--rule)
+    ),
+    linear-gradient(135deg, #fffdf6, #f8f4e9);
+  background-position:
+    0 0,
+    0 calc(var(--rule) * 0.55),
+    0 0;
+  box-shadow:
+    0 1px 0 #e9e2d2,
+    0 2px 0 #ddd5c3,
+    0 3px 0 #e4dccb,
+    0 3px 3px rgba(15, 7, 3, 0.45),
+    6px 10px 18px rgba(15, 7, 3, 0.4);
+}
+
+/* the glued binding along the top */
+.pad::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(var(--rule) * 0.55);
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #45404c, #2b2731);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 1px rgba(15, 7, 3, 0.35);
+}
+
+.pad-title {
+  margin: 0;
+  font-family: var(--hand);
+  font-size: var(--title, 33px);
+  font-weight: 700;
+  line-height: calc(var(--rule) * 1.5);
+  letter-spacing: 0;
+  text-wrap: balance;
+  transform: translateY(calc(var(--rule) * 0.12));
+}
+
+.pad-text {
+  margin: calc(var(--rule) * 0.5) 0 0;
+  font-family: var(--print);
+  font-size: var(--text, 15px);
+  line-height: var(--rule);
+  color: #2e3552;
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------------------
+   Business card: name, role, the links
+------------------------------------------------------------------- */
+.card {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 22px 0 26px;
+  border-radius: 5px;
+  color: var(--ink);
+  background: linear-gradient(135deg, #fffefb 0%, #f8f5ee 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(90, 66, 40, 0.25),
+    0 1px 2px rgba(15, 7, 3, 0.5),
+    5px 8px 14px rgba(15, 7, 3, 0.36);
+  pointer-events: auto;
+  transition:
+    scale 200ms ease,
+    box-shadow 200ms ease;
+}
+
+/* a thin amber edge, printed */
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  background: var(--amber);
+}
+
+.card:hover,
+.card:focus-within {
+  scale: 1.015;
+  box-shadow:
+    0 0 0 0.5px rgba(90, 66, 40, 0.25),
+    0 1px 3px rgba(15, 7, 3, 0.45),
+    8px 13px 22px rgba(15, 7, 3, 0.34);
+}
+
+.card-name {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.card-role {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: #635b54;
+}
+
+.card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 16px;
+}
+
+.card-links a,
+.card-plain {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(29, 26, 36, 0.28);
+}
+
+.card-plain {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+.card-links a:hover,
+.card-plain:hover {
+  border-bottom-color: #c27a2c;
+}
+
+/* ------------------------------------------------------------------
+   Sticky note: a handwritten hint, pointing at the console
+------------------------------------------------------------------- */
+.sticky {
+  z-index: 4;
+  padding: 13px 12px;
+  color: var(--pencil);
+  font-family: var(--hand);
+  background: linear-gradient(165deg, #ffe596 0%, #ffd668 55%, #f7c955 100%);
+  box-shadow:
+    0 1px 1px rgba(15, 7, 3, 0.35),
+    5px 11px 13px -4px rgba(15, 7, 3, 0.45);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* the glued strip is flat; the free end curls up a little */
+.sticky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(150, 100, 20, 0.08), transparent 22%),
+    radial-gradient(120% 60% at 100% 100%, rgba(120, 80, 10, 0.16), transparent 60%);
+  pointer-events: none;
+}
+
+.sticky-text {
+  position: relative;
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sticky-text small {
+  display: block;
+  margin-top: 5px;
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.sticky-arrow {
+  position: absolute;
+  right: 6%;
+  bottom: 10%;
+  width: 44%;
+  height: auto;
+  rotate: var(--arrow, 0deg);
+}
+
+.cap-touch {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .cap-fine {
+    display: none;
+  }
+
+  .cap-touch {
+    display: inline;
+  }
+}
+
+.desk[data-layout="phone"] .sticky {
+  padding: 10px 9px;
+}
+
+.desk[data-layout="phone"] .sticky-text {
+  font-size: 22px;
+}
+
+.desk[data-layout="phone"] .sticky-text small {
+  font-size: 14px;
+}
+
+.desk[data-layout="phone"] .sticky-arrow {
+  width: 40%;
+  bottom: 6%;
+}
+
+/* ------------------------------------------------------------------
+   The paper: one printed A4 sheet, with a paper-clipped tag
+------------------------------------------------------------------- */
+.paper {
+  z-index: 2; /* under the console's edge */
+  font-size: calc(var(--w, 150px) / 15);
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.paper-sheet {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  padding: 1.3em 1.2em;
+  border-radius: 0.08em;
+  background: linear-gradient(135deg, #fdfbf7 0%, var(--sheet) 45%, #f2ede2 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(90, 66, 40, 0.3),
+    0 0.5px 1px rgba(15, 7, 3, 0.5),
+    0.2em 0.32em 0.65em rgba(15, 7, 3, 0.4);
+  transition:
+    scale 200ms ease,
+    box-shadow 200ms ease;
+}
+
+/* a faint fold a third of the way down */
+.paper-sheet::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  height: 1px;
+  background: rgba(70, 50, 30, 0.07);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.paper:hover .paper-sheet,
+.paper:focus-visible .paper-sheet {
+  scale: 1.02;
+  box-shadow:
+    0 0 0 0.5px rgba(90, 66, 40, 0.3),
+    0 1px 2px rgba(15, 7, 3, 0.45),
+    0.35em 0.55em 1.1em rgba(15, 7, 3, 0.38);
+}
+
+.paper-name {
+  display: block;
+  font-family: var(--sans);
+  font-size: 1.3em;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* printed lines: a role, a rule, then sections of grey text */
+.paper-sheet i {
+  display: block;
+  height: 0.24em;
+  margin-top: 0.56em;
+  border-radius: 0.12em;
+  background: #b9b0a2;
+}
+
+.paper-sheet .p-role {
+  margin-top: 0.55em;
+  background: #8e867a;
+}
+
+.paper-sheet .p-rule {
+  height: 0.06em;
+  margin: 0.75em 0 0.2em;
+  border-radius: 0;
+  background: rgba(29, 26, 36, 0.65);
+}
+
+.paper-sheet .p-head {
+  height: 0.3em;
+  margin-top: 0.95em;
+  background: #534d58;
+}
+
+/* a kraft tag, clipped to the top edge */
+.paper-tag {
+  position: absolute;
+  right: 8%;
+  top: -0.85em;
+  padding: 0.18em 0.6em 0.22em 1.05em;
+  font-family: var(--hand);
+  font-size: 1.35em;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--pencil);
+  background: linear-gradient(160deg, #ecd5ab, #dfc290);
+  border-radius: 2px;
+  rotate: -5deg;
+  box-shadow:
+    0 0.5px 1px rgba(15, 7, 3, 0.4),
+    0.12em 0.2em 0.35em rgba(15, 7, 3, 0.3);
+}
+
+.paper-clip {
+  position: absolute;
+  left: 0.22em;
+  top: -0.55em;
+  width: 0.5em;
+  height: 1.45em;
+  color: #a7a49e;
+  filter: drop-shadow(0.06em 0.08em 0.06em rgba(15, 7, 3, 0.4));
+}
+
+/* ------------------------------------------------------------------
+   Props: rendered top-down with the lamp's light and their own shadows
+   baked in (assets/props/*.webp, 2.5 image px per design px, the object
+   centred in its image), so they are never turned in CSS. js/scene.js
+   sizes and places them.
+------------------------------------------------------------------- */
+.prop {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.desk > .prop {
+  rotate: none;
+}
+
+.prop img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* little things lie on the papers' edges */
+.prop[data-prop^="clip"] {
+  z-index: 4;
+}
+
+.mug {
+  z-index: 5;
+}
+
+/* the mug and the watch can be picked up for a closer look: each opens a card */
+button.prop {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.prop img {
+  transition:
+    scale 200ms ease,
+    filter 200ms ease;
+}
+
+body.scene-table button.prop:is(:hover, [aria-expanded="true"]) img {
+  scale: 1.015;
+  filter: brightness(1.05);
+}
+
+/* a focus ring around the object itself, not its shadow-padded image */
+button.prop:focus-visible {
+  outline: none;
+}
+
+.mug::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72%; /* the coaster */
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.mug:focus-visible::after,
+.watch:focus-visible .hands {
+  outline: 2px solid var(--amber);
+  outline-offset: 6px;
+}
+
+/* the stir: a ring spreads across the coffee */
+.ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--coffee, 30%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 1.5px solid rgba(255, 236, 210, 0.4);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mug.stir .ripple {
+  animation: ripple 900ms ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.8;
+    scale: 0.12;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* the watch's hands keep my time (js/scene.js turns them); the dial and
+   the small seconds dial come from the render, so these sit over them */
+.hands {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--dial, 40%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0.5px 0.9px 0.5px rgba(15, 7, 3, 0.5));
+}
+
+.hands i {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform-origin: 50% 100%;
+  border-radius: 1px 1px 0.5px 0.5px;
+  background: linear-gradient(90deg, #221c18 0 55%, #4a403a 55% 100%);
+}
+
+.hand-hour {
+  width: 5.2%;
+  height: 27%;
+  margin-left: -2.6%;
+  rotate: var(--hour, -50deg);
+}
+
+.hand-min {
+  width: 3.4%;
+  height: 41%;
+  margin-left: -1.7%;
+  rotate: var(--min, 40deg);
+}
+
+.hand-cap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #b9b4ad 60%, #7d7871);
+}
+
+.subdial {
+  position: absolute;
+  left: calc(50% + var(--sub-x, 0%));
+  top: calc(50% + var(--sub-y, 22%));
+  width: var(--sub, 25%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+}
+
+.subdial .hand-sec {
+  width: 8%;
+  height: 46%;
+  margin-left: -4%;
+  background: var(--sec-ink, #a8412c);
+  rotate: var(--sec, 0deg);
+}
+
+/* ------------------------------------------------------------------
+   The card the mug and the watch open: a little handwritten note
+------------------------------------------------------------------- */
+.desk > .note {
+  z-index: 9;
+  height: auto;
+  min-height: 0;
+  padding: 13px 16px 12px;
+  border-radius: 3px;
+  color: var(--pen-ink);
+  background: linear-gradient(160deg, #fffdf7 0%, #f7f2e6 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(90, 66, 40, 0.25),
+    0 1px 2px rgba(15, 7, 3, 0.45),
+    6px 10px 18px rgba(15, 7, 3, 0.38);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.desk > .note[hidden] {
+  display: none;
+}
+
+.note.in {
+  animation: note-in 260ms var(--scene-ease);
+}
+
+@keyframes note-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+
+.note p {
+  margin: 0;
+}
+
+.note-head {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6c6259;
+}
+
+.note-big {
+  margin: 3px 0 7px;
+  font-family: var(--hand);
+  font-size: 31px;
+  font-weight: 700;
+  line-height: 1.02;
+}
+
+.note-big span {
+  font-size: 0.6em;
+  color: #4a4f6a;
+}
+
+.note-line {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: #2e2a33;
+}
+
+.note-small {
+  margin-top: 5px !important;
+  font-family: var(--hand);
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.desk[data-layout="phone"] > .note {
+  padding: 10px 12px 9px;
+}
+
+.desk[data-layout="phone"] .note-big {
+  font-size: 26px;
+}
+
+.desk[data-layout="phone"] .note-line {
+  font-size: 12.5px;
+}
+
+.desk[data-layout="phone"] .note-small {
+  font-size: 17px;
+}
+
+/* steam: soft wisps drifting up off the coffee (toward the camera);
+   --coffee is the coffee's diameter as a share of the image */
+.steam {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--coffee, 30%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+}
+
+.steam i {
+  position: absolute;
+  left: 30%;
+  top: 30%;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 250, 240, 0.3), rgba(255, 250, 240, 0));
+  filter: blur(6px);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body.scene-table .steam i {
+    animation: steam 6s ease-in-out infinite;
+  }
+
+  body.scene-table .steam i:nth-child(2) {
+    animation-delay: -2s;
+    left: 40%;
+  }
+
+  body.scene-table .steam i:nth-child(3) {
+    animation-delay: -4s;
+    left: 22%;
+    top: 38%;
+  }
+}
+
+@keyframes steam {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  35% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-18%, -70%) scale(1.7);
+  }
+}
+
+/* ------------------------------------------------------------------
+   A polaroid of the pixel avatar
+------------------------------------------------------------------- */
+.polaroid {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--w, 150px) * 0.075) calc(var(--w, 150px) * 0.075) 0;
+  border-radius: 2px;
+  background: linear-gradient(150deg, #fdfcf8 0%, #f6f3ea 60%, #eeeadf 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(90, 66, 40, 0.25),
+    0 1px 2px rgba(15, 7, 3, 0.5),
+    5px 8px 14px rgba(15, 7, 3, 0.36);
+}
+
+.polaroid-photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #fbfaf6;
+  box-shadow: inset 0 0 0 1px rgba(40, 24, 12, 0.18);
+}
+
+.polaroid-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* the glossy print catches the lamp */
+.polaroid-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 38%);
+  pointer-events: none;
+}
+
+.polaroid figcaption {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--hand);
+  font-size: calc(var(--w, 150px) * 0.15);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pen-ink);
+}
+
+/* ------------------------------------------------------------------
+   Put the console down
+------------------------------------------------------------------- */
+.putdown,
+.reader-down {
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px 7px;
+  font-family: var(--pixel);
+  font-size: 15px;
+  line-height: 1.1;
+  color: var(--text);
+  background: var(--room-ink);
+  border: 2px solid var(--room-line);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: border-color 140ms ease;
+}
+
+.putdown::before,
+.reader-down::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-bottom-width: 0;
+  border-top-color: var(--amber);
+}
+
+.putdown:hover,
+.reader-down:hover {
+  border-color: var(--amber);
+}
+
+.putdown {
+  display: none;
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  right: 20px;
+}
+
+body.scene-hand .putdown {
+  display: inline-flex;
+}
+
+/* it appears once the console is up */
+@starting-style {
+  body.scene-hand .putdown {
+    opacity: 0;
+  }
+}
+
+body.scene-moving.scene-hand .putdown {
+  transition:
+    opacity 240ms ease var(--lift),
+    border-color 140ms ease;
+}
+
+body.scene-moving .putdown {
+  pointer-events: none;
+}
+
+/* the footer's plain link to the one-page version */
+.plain-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.plain-link:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ------------------------------------------------------------------
+   The lifted sheet: the one-page version, read in place. JS sets its
+   transform and drop shadow, and the page's clip (the A4 part of the big
+   sheet while it is small, all of it once it is up).
+------------------------------------------------------------------- */
+.reader {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(14, 8, 5, 0);
+}
+
+body.scene-paper .reader {
+  background: rgba(14, 8, 5, 0.6);
+}
+
+.reader-sheet {
+  position: absolute;
+  top: 4vh;
+  left: 0;
+  right: 0;
+  width: min(860px, 92vw);
+  height: 92vh;
+  margin: 0 auto;
+  opacity: 0;
+}
+
+body.scene-paper .reader-sheet {
+  opacity: 1;
+}
+
+/* a strip along the top holds the button, so it never covers the page */
+.reader-page {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding-top: 52px;
+  border-radius: 2px;
+  background: var(--sheet);
+  box-shadow: inset 0 0 0 1px rgba(90, 66, 40, 0.22);
+}
+
+body.scene-moving .reader {
+  transition: background-color var(--lift) ease;
+}
+
+body.scene-moving .reader-sheet {
+  transition:
+    transform var(--lift) var(--scene-ease),
+    filter var(--lift) var(--scene-ease),
+    opacity 140ms ease;
+}
+
+body.scene-moving .reader-page {
+  transition: clip-path var(--lift) var(--scene-ease);
+}
+
+body.scene-landing .reader-sheet {
+  transition-timing-function: var(--settle-ease), var(--settle-ease), ease;
+  transition-delay: 0s, 0s, calc(var(--lift) - 140ms);
+}
+
+body.scene-landing .reader-page {
+  transition-timing-function: var(--settle-ease);
+}
+
+.reader-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-top: 1px solid rgba(29, 26, 36, 0.12);
+  background: var(--sheet);
+}
+
+.reader-down {
+  display: inline-flex;
+  position: absolute;
+  z-index: 1;
+  top: 9px;
+  right: 12px;
+}
+
+@media (max-width: 1100px) {
+  .putdown {
+    top: 12px;
+    right: 16px;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Phones
+------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  /* at the desk the whole scene is one screen (phones have overlay
+     scrollbars, so this never shifts the layout sideways) */
+  body.scene-table .room,
+  body.scene-paper .room {
+    max-height: 100svh;
+    overflow: clip;
+  }
+
+  /* under the shelf, before the intro paragraph */
+  .putdown {
+    position: static;
+    order: 2;
+    align-self: center;
+  }
+
+  /* full screen, with a strip at the top for the button so it never covers the page */
+  .reader-sheet {
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .reader-page {
+    padding-top: calc(52px + env(safe-area-inset-top));
+    border-radius: 0;
+  }
+
+  .reader-down {
+    top: calc(8px + env(safe-area-inset-top));
+    right: 12px;
+  }
+}

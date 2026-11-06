@@ -1,0 +1,997 @@
+/* ------------------------------------------------------------------
+   Screen views. The screen is a size container: 100cqw = its width.
+   Proportions follow the reference cartridge screen, which draws at
+   (base px x fs) with fs = 0.92 on a ~290px screen, so one reference
+   px is --k = 0.317cqw here. --u is its pixel unit (width / 92), used
+   for borders, bars and the stepped pixel triangles.
+------------------------------------------------------------------- */
+.scr {
+  --k: 0.317cqw;
+  --u: calc(100cqw / 92);
+  --pad: 5.5cqw; /* screen margin (reference P = w x 0.055) */
+  --paper: #f9f3e8;
+  /* screen-off: warm charcoal glass, warm text (no greens anywhere) */
+  --off-bg: #1c1a20;
+  --off-ink: #efe6d8;
+  --off-muted: #a99f95;
+  /* Type: the pixel face is kept for titles (h2), the printed key hints and
+     the speaker tag. Anything with running text, dates or numbers is set in
+     the sans, which stays legible at small sizes where bold pixel glyphs blur
+     (2 reads as 8, B as G). Floors keep phones at 12px and up. */
+  --t-key: max(11px, calc(12 * var(--k))); /* the letter on a printed key (B must not read as 8) */
+  --t-hint: max(11px, calc(12.5 * var(--k))); /* [A] more, in the pixel face */
+  --t-xs: max(12px, calc(12 * var(--k))); /* counts, tags, handles */
+  --t-s: max(12px, calc(13 * var(--k))); /* kickers, meta lines */
+  --t-m: max(13px, calc(15 * var(--k))); /* body copy and rows */
+  --t-l: max(13.5px, calc(16.5 * var(--k))); /* the dialogue line */
+  --key: max(14px, calc(16 * var(--k)));
+  /* quiet text: 85% ink stays above 4.5:1 on every cartridge colour, also on a selected row */
+  --ink-dim: color-mix(in srgb, var(--ink) 85%, transparent);
+  --ink-22: color-mix(in srgb, var(--ink) 22%, transparent);
+  --ink-18: color-mix(in srgb, var(--ink) 18%, transparent);
+  --ink-10: color-mix(in srgb, var(--ink) 10%, transparent);
+  /* LCD ghosting: every dark glyph leaves a faint copy a third of a unit down-right */
+  --ghost: max(1px, calc(var(--u) / 3)) max(1px, calc(var(--u) / 3)) 0 var(--ink-10);
+
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--pad);
+  background: var(--label, var(--paper));
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-m);
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  text-shadow: var(--ghost);
+}
+
+/* whole-pixel unit where the browser can round */
+@supports (width: round(1px, 1px)) {
+  .scr {
+    --u: max(2px, round(calc(100cqw / 92), 1px));
+  }
+}
+
+.scr h2 {
+  margin: 0;
+  font-family: var(--pixel);
+  font-weight: 700;
+}
+
+.scr p {
+  margin: 0;
+}
+
+.scr button {
+  font-family: inherit;
+}
+
+.scr :focus-visible {
+  outline: max(2px, calc(var(--u) * 0.7)) solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* the printed key, as in a game's button hints: [A] more */
+.scr kbd {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--key);
+  height: var(--key);
+  margin-right: calc(6 * var(--k));
+  border-radius: max(2px, calc(3 * var(--k)));
+  background: var(--ink);
+  color: var(--label, var(--paper));
+  /* the letter is printed in the sans: Pixelify's chamfered B reads as 8 */
+  font-family: var(--sans);
+  font-size: var(--t-key);
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.scr .hint {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-end;
+  flex: none;
+  margin-top: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--pixel);
+  font-size: var(--t-hint);
+  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hint:hover {
+  opacity: 0.72;
+}
+
+.scr p.hint {
+  cursor: default;
+}
+
+p.hint:hover {
+  opacity: 1;
+}
+
+/* status tag: a flat ink block with the cartridge colour punched out */
+.chip,
+.v-gallery .page .kind,
+.v-timeline .when {
+  flex: none;
+  padding: 0 calc(7 * var(--k));
+  background: var(--ink);
+  color: var(--label, var(--paper));
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+/* scrollable bodies on text-heavy screens */
+.scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ------------------------------------------------------------------
+   Idle: no cartridge. Dark glass, the mascot, two lines of help.
+------------------------------------------------------------------- */
+.v-empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--off-bg);
+  color: var(--off-ink);
+}
+
+.v-empty .mascot {
+  margin-bottom: calc(12 * var(--k));
+  opacity: 0.9;
+}
+
+.v-empty .mascot svg {
+  display: block;
+  width: 32cqw;
+  height: 32cqw;
+}
+
+.v-empty h2 {
+  font-size: calc(16 * var(--k));
+  line-height: 1.2;
+  color: var(--off-ink);
+}
+
+.v-empty p {
+  max-width: 82cqw;
+  margin-top: calc(5 * var(--k));
+  font-size: var(--t-s);
+  line-height: 1.3;
+  color: var(--off-muted);
+}
+
+/* picked with the d-pad: the name in its colour, arrows either side */
+.v-pick h2 {
+  max-width: 70cqw;
+  font-size: calc(26 * var(--k));
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.v-pick p {
+  margin-top: calc(10 * var(--k));
+  font-size: var(--t-s);
+  color: var(--off-ink);
+}
+
+.v-pick .tri {
+  position: absolute;
+  top: 50%;
+  width: calc(4 * var(--u));
+  height: calc(7 * var(--u));
+  translate: 0 -50%;
+  background: var(--off-muted);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+}
+
+.v-pick .tri.l {
+  left: 8cqw;
+  clip-path: polygon(100% 0, 100% 100%, 75% 100%, 75% 85.71%, 50% 85.71%, 50% 71.43%, 25% 71.43%, 25% 57.14%, 0 57.14%, 0 42.86%, 25% 42.86%, 25% 28.57%, 50% 28.57%, 50% 14.29%, 75% 14.29%, 75% 0);
+  animation: nudge-l 800ms step-end infinite;
+}
+
+.v-pick .tri.r {
+  right: 8cqw;
+  clip-path: polygon(0 0, 0 100%, 25% 100%, 25% 85.71%, 50% 85.71%, 50% 71.43%, 75% 71.43%, 75% 57.14%, 100% 57.14%, 100% 42.86%, 75% 42.86%, 75% 28.57%, 50% 28.57%, 50% 14.29%, 25% 14.29%, 25% 0);
+  animation: nudge-r 800ms step-end infinite;
+}
+
+@keyframes nudge-l {
+  50% {
+    translate: calc(-1 * var(--u)) -50%;
+  }
+}
+
+@keyframes nudge-r {
+  50% {
+    translate: var(--u) -50%;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Boot title card: the name, and a one-unit bar that fills like a load
+------------------------------------------------------------------- */
+.v-splash {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.v-splash h2 {
+  max-width: 80cqw;
+  font-size: calc(24 * var(--k));
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.v-splash .load {
+  display: block;
+  width: 36cqw;
+  height: var(--u);
+  margin-top: calc(13 * var(--k));
+  overflow: hidden;
+  background: var(--ink-22);
+}
+
+.v-splash .load i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--ink);
+  animation: load 400ms steps(12, end) forwards;
+}
+
+@keyframes load {
+  to {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Dialogue (About): portrait standing on a floor, a bordered text box,
+   the speaker's name tag on its top edge and "n of N" beside it.
+------------------------------------------------------------------- */
+.v-dialog {
+  --m: 3.5cqw; /* box margin (reference max(8, w x 0.035)) */
+  --tag: max(18px, calc(21.25 * var(--k))); /* name tag height */
+  --box-h: calc(4 * 1.38 * var(--t-l) + 26 * var(--k) + 2 * var(--u) + 2px); /* four lines + padding + border */
+  --art: 84cqw; /* portrait size */
+  padding: 0;
+}
+
+/* the floor under him, from just above the name tag to the bottom */
+.v-dialog::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--m) + var(--box-h) + 24 * var(--k));
+  background: color-mix(in srgb, var(--label) 91%, var(--ink));
+}
+
+.v-dialog .portrait {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  cursor: pointer;
+}
+
+/* bottom tucked behind the box, left edge on the screen edge so the cut
+   shoulder never shows; white in the art becomes the paper */
+.v-dialog .portrait img {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--u) - var(--tag) - var(--art) * 4 / 64);
+  width: var(--art);
+  height: var(--art);
+  image-rendering: pixelated;
+  mix-blend-mode: multiply;
+  animation: breathe 1520ms step-end infinite;
+}
+
+/* a one-pixel breath */
+@keyframes breathe {
+  50% {
+    translate: 0 calc(var(--art) / 64);
+  }
+}
+
+.v-dialog .plate {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2cqw;
+  height: var(--tag);
+  margin-bottom: calc(-1 * var(--u));
+  padding: 0 calc(var(--m) + 16 * var(--k)) 0 calc(var(--m) + 3 * var(--u));
+}
+
+.v-dialog .speaker {
+  height: 100%;
+  padding: 0 calc(7 * var(--k));
+  background: var(--ink);
+  color: var(--label, var(--paper));
+  font-family: var(--pixel);
+  font-size: var(--t-hint);
+  font-weight: 700;
+  line-height: var(--tag);
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+/* on a patch of floor, so the portrait's frame line never runs through the digits */
+.v-dialog .count {
+  padding: 0 calc(4 * var(--k));
+  background: color-mix(in srgb, var(--label) 91%, var(--ink));
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: calc(var(--tag) - var(--u)); /* down to the box's top border, not over it */
+  white-space: nowrap;
+}
+
+.v-dialog .box {
+  position: relative;
+  flex: none;
+  height: var(--box-h);
+  margin: 0 var(--m) var(--m);
+  padding: calc(13 * var(--k)) calc(16 * var(--k) - var(--u));
+  border: var(--u) solid var(--ink);
+  background: var(--label, var(--paper));
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* the thin highlight under the top border */
+.v-dialog .box::before {
+  content: "";
+  position: absolute;
+  top: var(--u);
+  left: var(--u);
+  right: var(--u);
+  height: var(--u);
+  background: color-mix(in srgb, var(--paper) 72%, #8a6a4f);
+}
+
+.v-dialog .line {
+  position: relative;
+  font-size: var(--t-l);
+  line-height: 1.38;
+}
+
+/* stepped arrow, blinks once the line has finished typing */
+.v-dialog .more {
+  position: absolute;
+  right: calc(16 * var(--k) - var(--u));
+  bottom: max(0px, calc(16 * var(--k) - 4 * var(--u)));
+  width: calc(5 * var(--u));
+  height: calc(3 * var(--u));
+  background: var(--ink);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 33.33%, 80% 33.33%, 80% 66.67%, 60% 66.67%, 60% 100%, 40% 100%, 40% 66.67%, 20% 66.67%, 20% 33.33%, 0 33.33%);
+  opacity: 0;
+}
+
+.v-dialog .box.done .more {
+  opacity: 1;
+  animation: blink 840ms step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Project details (Projects): the two-tone icon beside the kicker and
+   title, the status tag, body copy, stack, links, then [B] back
+------------------------------------------------------------------- */
+.v-detail .head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: calc(10 * var(--k));
+}
+
+/* 16 art pixels at a whole number of device pixels each */
+.v-detail .icon {
+  flex: none;
+  width: calc(14 * var(--u));
+  height: calc(14 * var(--u));
+  margin: calc(-1 * var(--u)) 0;
+}
+
+.v-detail .icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(calc(var(--u) / 2) calc(var(--u) / 2) 0 var(--ink-18));
+}
+
+.v-detail .name {
+  min-width: 0;
+}
+
+.v-detail .kicker {
+  color: var(--ink-dim);
+  font-size: var(--t-s);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.v-detail h2 {
+  margin-top: calc(2 * var(--k));
+  font-size: calc(22 * var(--k));
+  line-height: 1.08;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.v-detail .tags {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(4 * var(--k)) calc(9 * var(--k));
+  margin-top: calc(12 * var(--k));
+}
+
+.v-detail .meta {
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.v-detail .details {
+  margin-top: calc(10 * var(--k));
+  font-size: var(--t-m);
+  line-height: 1.42;
+}
+
+.v-detail .stack {
+  margin-top: calc(12 * var(--k));
+  font-size: var(--t-s);
+  line-height: 1.4;
+}
+
+.v-detail .stack span {
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+
+.v-detail .menu {
+  margin-top: calc(10 * var(--k));
+}
+
+.v-detail > .hint {
+  padding-top: calc(12 * var(--k));
+}
+
+/* bullet points: a one-unit ink square per line */
+.points {
+  display: grid;
+  gap: calc(6 * var(--k));
+  margin: calc(10 * var(--k)) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-m);
+  line-height: 1.42;
+}
+
+.points li {
+  position: relative;
+  padding-left: calc(3 * var(--u));
+}
+
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(0.71em - var(--u) / 2);
+  width: var(--u);
+  height: var(--u);
+  background: var(--ink);
+}
+
+/* link menus: a stepped cursor marks the selected row */
+.menu {
+  display: grid;
+  gap: calc(3 * var(--k));
+  margin: calc(12 * var(--k)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu :is(a, button) {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 2cqw;
+  width: 100%;
+  margin: 0;
+  padding: calc(5 * var(--k)) calc(6 * var(--k)) calc(5 * var(--k)) calc(3 * var(--u) + 12 * var(--k));
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-m);
+  line-height: 1.3;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu :is(a, button)::before {
+  content: "";
+  position: absolute;
+  left: calc(6 * var(--k));
+  top: 50%;
+  width: calc(3 * var(--u));
+  height: calc(5 * var(--u));
+  translate: 0 -50%;
+  background: var(--ink);
+  clip-path: polygon(0 0, 0 100%, 33.33% 100%, 33.33% 80%, 66.67% 80%, 66.67% 60%, 100% 60%, 100% 40%, 66.67% 40%, 66.67% 20%, 33.33% 20%, 33.33% 0);
+  opacity: 0;
+}
+
+.menu :is(a, button).sel,
+.menu :is(a, button):hover {
+  background: var(--ink-10);
+}
+
+.menu :is(a, button).sel::before {
+  opacity: 1;
+}
+
+/* a group heading inside a list (Projects: Built, Lab) */
+.menu .group {
+  margin-top: calc(8 * var(--k));
+  padding: 0 calc(6 * var(--k));
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.menu .group:first-child {
+  margin-top: 0;
+}
+
+.menu .handle {
+  margin-left: auto;
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------
+   Caption bar (gallery, timeline): ink strip, stepped arrows at the
+   ends, bold title over a dim subtitle, "1 of 3" on the right.
+------------------------------------------------------------------- */
+.bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: max(2px, calc(10 * var(--k) - 2cqw));
+  flex: none;
+  height: calc(46 * var(--k));
+  padding: 0 max(0px, calc(12 * var(--k) - 2cqw));
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+
+.bar button {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 0 2cqw;
+  border: 0;
+  background: none;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.bar button::before {
+  content: "";
+  width: calc(3 * var(--u));
+  height: calc(5 * var(--u));
+  background: var(--paper);
+}
+
+.bar button[data-act="left"]::before {
+  clip-path: polygon(100% 0, 100% 100%, 66.67% 100%, 66.67% 80%, 33.33% 80%, 33.33% 60%, 0 60%, 0 40%, 33.33% 40%, 33.33% 20%, 66.67% 20%, 66.67% 0);
+}
+
+.bar button[data-act="right"]::before {
+  clip-path: polygon(0 0, 0 100%, 33.33% 100%, 33.33% 80%, 66.67% 80%, 66.67% 60%, 100% 60%, 100% 40%, 66.67% 40%, 66.67% 20%, 33.33% 20%, 33.33% 0);
+}
+
+.bar button:hover::before {
+  background: var(--label, var(--paper));
+}
+
+.bar .cap {
+  min-width: 0;
+}
+
+.bar .cap strong,
+.bar .cap span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.bar .cap strong {
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+
+.bar .cap span,
+.bar .count {
+  color: color-mix(in srgb, var(--paper) 78%, transparent);
+  font-size: var(--t-xs);
+}
+
+.bar .count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------
+   Gallery (Lab): one paper per page on the desk, [A] read top right
+------------------------------------------------------------------- */
+.v-gallery {
+  padding: 0;
+}
+
+.v-gallery .read {
+  position: absolute;
+  z-index: 1;
+  top: calc(12 * var(--k));
+  right: calc(12 * var(--k));
+  margin: 0;
+}
+
+.v-gallery .gal-mat {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: calc(24 * var(--k) + var(--key)) 7cqw 6cqw;
+}
+
+.v-gallery .page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(7 * var(--k));
+  width: 100%;
+  height: 100%;
+  padding: 5.5cqw 5cqw;
+  overflow: hidden;
+  background: #fffdf7;
+  box-shadow:
+    var(--u) var(--u) 0 var(--ink-18),
+    inset 0 0 0 max(1px, calc(var(--u) / 2)) var(--ink-10);
+  text-align: center;
+}
+
+.v-gallery .page h2 {
+  font-size: max(15px, calc(19 * var(--k)));
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.v-gallery .page .by {
+  margin-top: calc(-3 * var(--k));
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.v-gallery .page .sum {
+  align-self: stretch;
+  margin-top: calc(3 * var(--k));
+  font-size: max(13px, calc(14 * var(--k)));
+  line-height: 1.42;
+  text-align: left;
+}
+
+.v-gallery .page .stk {
+  align-self: stretch;
+  margin-top: auto;
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  line-height: 1.3;
+  text-align: left;
+}
+
+.v-gallery .page .rule {
+  display: block;
+  height: var(--u);
+  background: var(--ink-18);
+}
+
+.v-gallery .page .rule:first-of-type {
+  margin-top: 3cqw;
+}
+
+/* ------------------------------------------------------------------
+   Timeline (Work): one role per page over the caption bar
+------------------------------------------------------------------- */
+.v-timeline {
+  padding: 0;
+}
+
+.v-timeline .body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--pad);
+}
+
+.v-timeline .when {
+  align-self: flex-start;
+}
+
+.v-timeline h2 {
+  margin-top: calc(10 * var(--k));
+  font-size: calc(28 * var(--k));
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.v-timeline .org {
+  margin-top: calc(5 * var(--k));
+  color: var(--ink-dim);
+  font-size: var(--t-s);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.v-timeline .points {
+  margin-top: calc(12 * var(--k));
+}
+
+/* ------------------------------------------------------------------
+   Contact (mail): the address on a card that writes an email (mailto),
+   with a small Copy key beside it as the secondary action
+------------------------------------------------------------------- */
+/* one group, centred in the space above the hint, like the reference mail screen */
+.v-contact h2 {
+  margin-top: auto;
+  font-size: calc(36 * var(--k));
+  line-height: 1.06;
+}
+
+.v-contact .mail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin-top: calc(14 * var(--k));
+  border: var(--u) solid var(--ink);
+  background: var(--paper);
+}
+
+.v-contact .write {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(7 * var(--k));
+  min-width: 0;
+  padding: calc(11 * var(--k)) calc(12 * var(--k));
+  color: var(--ink);
+  font-size: max(13.5px, calc(16.5 * var(--k)));
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.v-contact .write span {
+  display: flex;
+  align-items: center;
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  line-height: 1.2;
+}
+
+/* selected: lifted, and its label becomes a printed [A] key hint */
+.v-contact .mail:has(.write.sel) {
+  box-shadow: var(--u) var(--u) 0 var(--ink);
+  translate: calc(var(--u) / -2) calc(var(--u) / -2);
+}
+
+.v-contact .write.sel span {
+  color: var(--ink);
+}
+
+.v-contact .write.sel span::before {
+  content: "A";
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--key);
+  height: var(--key);
+  margin-right: calc(6 * var(--k));
+  border-radius: max(2px, calc(3 * var(--k)));
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--t-key);
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: none;
+}
+
+/* the secondary action: a small outlined key; its hit area reaches past the outline */
+.v-contact .copy {
+  position: relative;
+  flex: none;
+  margin-right: calc(11 * var(--k));
+  padding: calc(3 * var(--k)) calc(8 * var(--k));
+  border: max(1px, calc(var(--u) / 2)) solid var(--ink);
+  border-radius: max(2px, calc(3 * var(--k)));
+  background: none;
+  color: var(--ink);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.v-contact .copy::after {
+  content: "";
+  position: absolute;
+  inset: -8px -6px;
+}
+
+.v-contact .copy:hover {
+  background: var(--ink-10);
+}
+
+.v-contact .copy.sel {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+
+/* the card already shows [A] while it's selected */
+.v-contact:has(.write.sel) > .hint {
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------------
+   Socials menu
+------------------------------------------------------------------- */
+.v-menu h2 {
+  font-size: calc(36 * var(--k));
+  line-height: 1.06;
+}
+
+.v-menu .menu {
+  margin-top: calc(16 * var(--k));
+}
+
+/* Projects: a long list scrolls between the title and the hint */
+.v-library h2 {
+  font-size: calc(28 * var(--k));
+}
+
+.v-library .menu {
+  flex: 0 1 auto;
+  min-height: 0;
+  margin-top: calc(10 * var(--k));
+  gap: calc(1 * var(--k));
+}
+
+.v-library .menu :is(a, button) {
+  padding-top: calc(4 * var(--k));
+  padding-bottom: calc(4 * var(--k));
+}
+
+.v-library > .hint {
+  padding-top: calc(8 * var(--k));
+}
+
+/* ------------------------------------------------------------------
+   Activity: big count, a pixel heatmap, a legend
+------------------------------------------------------------------- */
+.v-activity h2 {
+  font-size: calc(28 * var(--k));
+  line-height: 1.06;
+}
+
+/* count and heatmap sit centred between the title and the hint */
+.v-activity .total {
+  margin-top: auto;
+  font-size: calc(48 * var(--k));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.v-activity .sub {
+  margin-top: calc(4 * var(--k));
+  font-size: var(--t-m);
+  line-height: 1.3;
+}
+
+.v-activity canvas {
+  display: block;
+  width: 100%;
+  margin-top: calc(16 * var(--k));
+  image-rendering: pixelated;
+}
+
+.v-activity .legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(5 * var(--k));
+  color: var(--ink-dim);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* ------------------------------------------------------------------
+   Reduced motion: nothing bobs, blinks or breathes; the load is full
+------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .v-pick .tri,
+  .v-dialog .portrait img,
+  .v-dialog .box.done .more {
+    animation: none;
+  }
+
+  .v-splash .load i {
+    width: 100%;
+    animation: none;
+  }
+}

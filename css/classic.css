@@ -1,0 +1,670 @@
+/* ------------------------------------------------------------------
+   Classic: the one-page, recruiter-friendly version of the portfolio.
+   A sheet of paper lying on the site's pixel-art wooden table.
+   Standalone: the sheet sits centred on the wood.
+   Embedded (html.embed, set by ?embed=1): the iframe is the paper.
+   Print: only the sheet's content, black on white.
+------------------------------------------------------------------- */
+:root {
+  --wood: #342419;
+  --wood-text: #f4ead8;
+
+  --paper: #fbf8f1;
+  --ink: #1d1a24; /* 16:1 on paper */
+  --muted: #57515f; /* 7:1 on paper */
+  --rule: #e2dccf;
+  --indigo: #31356a; /* 11:1 on paper */
+  --peri: #aab1e3;
+  --peri-deep: #737ab6;
+  --peri-wash: #e9ebf8;
+
+  --sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --pixel: "Pixelify Sans", ui-monospace, monospace;
+
+  --pad: clamp(20px, 6vw, 64px); /* paper margin */
+  --measure: 66ch; /* about 75 characters of body text per line */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--wood); /* the desk itself comes from css/desk.css */
+  image-rendering: pixelated;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 16px 12px 40px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--peri);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+dl,
+dd {
+  margin: 0;
+}
+
+/* ---------- links and focus ---------- */
+a {
+  color: var(--indigo);
+  text-decoration-line: underline;
+  text-decoration-color: var(--peri);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 120ms ease;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--indigo);
+  outline-offset: 3px;
+  border-radius: 2px;
+  text-decoration-color: currentColor;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--peri-wash);
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.print-url {
+  display: none;
+}
+
+/* ---------- the way back to the console (on the wood) ---------- */
+.topbar,
+.foot {
+  width: min(100%, calc(var(--measure) + 2 * var(--pad)));
+  margin: 0 auto;
+  display: flex;
+}
+
+.topbar {
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.foot {
+  justify-content: center;
+  margin-top: 28px;
+}
+
+/* styled like a button on the console shell */
+.console-link {
+  font-family: var(--pixel);
+  font-size: 0.9375rem;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--peri);
+  border: 2px solid #8d94cc;
+  border-bottom-width: 4px;
+  border-radius: 6px;
+  padding: 0.55rem 0.8rem 0.45rem;
+  text-decoration: none;
+}
+
+.console-link:hover {
+  background: #c4c9f0;
+}
+
+.console-link:active {
+  border-bottom-width: 2px;
+  transform: translateY(2px);
+}
+
+.console-link:focus-visible {
+  outline-color: var(--wood-text);
+}
+
+/* ---------- the sheet ---------- */
+.sheet {
+  width: min(100%, calc(var(--measure) + 2 * var(--pad)));
+  margin: 0 auto;
+  padding: var(--pad);
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 rgba(26, 11, 3, 0.35),
+    0 4px 10px rgba(22, 9, 2, 0.35),
+    0 18px 36px -8px rgba(22, 9, 2, 0.6);
+}
+
+/* ---------- masthead ---------- */
+.id {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  border-radius: 4px;
+  outline: 2px solid var(--peri);
+  outline-offset: 2px;
+}
+
+h1 {
+  font-size: clamp(2.125rem, 1.6rem + 2.4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.role {
+  margin-top: 0.35rem;
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  font-weight: 600;
+  color: var(--indigo);
+  line-height: 1.35;
+}
+
+.lead {
+  margin-top: 1.5rem;
+  color: var(--muted);
+}
+
+.lead strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.contact {
+  list-style: none;
+  padding: 0;
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+.contact li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.contact-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.contact a {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* a pixel-art trim under the masthead: two rows of 4px squares in periwinkle */
+.masthead::after {
+  content: "";
+  display: block;
+  height: 8px;
+  margin-top: 2rem;
+  background:
+    repeating-linear-gradient(90deg, var(--peri) 0 4px, transparent 4px 8px) 0 0 / 100% 4px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 4px, var(--peri) 4px 8px) 0 4px / 100% 4px no-repeat;
+}
+
+/* ---------- sections ---------- */
+.section {
+  margin-top: 2.25rem;
+}
+
+.section > h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+  font-size: 1.3125rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--indigo);
+}
+
+.section > h2::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: var(--rule);
+}
+
+.entries {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.1rem 1.25rem;
+}
+
+.entry h3 {
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  min-width: 0;
+}
+
+.entry h3 .sub {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--indigo);
+  letter-spacing: 0;
+  margin-top: 0.1rem;
+}
+
+.when {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.org {
+  font-weight: 600;
+  color: var(--indigo);
+  margin-top: 0.1rem;
+}
+
+.where {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* project names link to their repos, as on the resume */
+.entry h3 a.name {
+  color: inherit;
+}
+
+a.tag {
+  text-decoration: none;
+}
+
+a.tag:hover {
+  background: var(--peri);
+}
+
+.tag {
+  display: inline-block;
+  vertical-align: 0.15em;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--indigo);
+  background: var(--peri-wash);
+  border: 1.5px solid var(--peri-deep);
+  border-radius: 3px;
+}
+
+.stack {
+  margin-top: 0.3rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.points {
+  margin-top: 0.55rem;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.points li::marker {
+  color: var(--peri-deep);
+}
+
+.links {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+/* ---------- label and value pairs (skills, contact) ---------- */
+.pairs {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.pairs > div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 0 1.25rem;
+}
+
+.pairs dt {
+  font-weight: 600;
+}
+
+.pairs dd a {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- experiments ---------- */
+.section-note {
+  color: var(--muted);
+  margin: -0.35rem 0 0.9rem;
+}
+
+.experiments {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.exp-head a {
+  font-weight: 600;
+}
+
+.exp-stack {
+  margin-left: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 480px) {
+  body {
+    padding: 12px 10px 32px;
+  }
+
+  .topbar {
+    justify-content: flex-start;
+  }
+
+  .id {
+    align-items: flex-start;
+  }
+
+  .avatar {
+    margin-top: 0.15rem;
+  }
+
+  .contact,
+  .pairs > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pairs dt {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+}
+
+/* ---------- embedded in the console page: the iframe is the paper ---------- */
+html.embed {
+  background: var(--paper);
+}
+
+.embed body {
+  padding: 0;
+}
+
+.embed .topbar,
+.embed .foot {
+  display: none;
+}
+
+.embed .sheet {
+  min-height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a {
+    transition: none;
+  }
+
+  .console-link:active {
+    transform: none;
+  }
+}
+
+/* ---------- print: only the sheet, black on white ---------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 15mm;
+  }
+
+  :root {
+    --ink: #000;
+    --muted: #333;
+    --indigo: #000;
+    --rule: #999;
+  }
+
+  html,
+  html.embed,
+  body {
+    background: #fff !important;
+    color: #000;
+  }
+
+  body {
+    padding: 0;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+
+  .topbar,
+  .foot,
+  .section-contact,
+  .section-note {
+    display: none !important;
+  }
+
+  .sheet {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  code {
+    background: none;
+    padding: 0;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    outline: none;
+    border-radius: 0;
+  }
+
+  h1 {
+    font-size: 22pt;
+  }
+
+  .role {
+    font-size: 11.5pt;
+    margin-top: 1mm;
+  }
+
+  .lead {
+    margin-top: 3mm;
+  }
+
+  .contact {
+    margin-top: 3mm;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1mm 7mm;
+  }
+
+  .contact-label {
+    font-size: 8pt;
+  }
+
+  .masthead::after {
+    height: 0;
+    margin-top: 4mm;
+    background: none;
+    border-top: 1px solid #000;
+  }
+
+  .section {
+    margin-top: 4mm;
+  }
+
+  .section > h2 {
+    margin-bottom: 2mm;
+    font-size: 12pt;
+  }
+
+  .section > h2::after {
+    height: 1px;
+  }
+
+  .entries {
+    gap: 3mm;
+  }
+
+  .entry,
+  .experiments li,
+  .pairs > div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h2,
+  h3,
+  .entry-head {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* one line per project title: "anzen: Road-Safety ..." with the tag last */
+  .entry h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    font-size: 11pt;
+  }
+
+  .entry h3 .sub {
+    display: inline;
+    font-size: 10.5pt;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  .entry h3 .sub::before {
+    content: ":\00a0";
+    font-weight: 800;
+  }
+
+  .entry h3 .tag {
+    order: 3;
+    margin-left: 2mm;
+  }
+
+  .when,
+  .stack,
+  .links,
+  .exp-stack {
+    font-size: 9pt;
+  }
+
+  .tag {
+    background: none;
+    border: 1px solid #000;
+    font-size: 7.5pt;
+  }
+
+  .points {
+    margin-top: 1.5mm;
+    gap: 0.8mm;
+  }
+
+  .points li::marker {
+    color: #000;
+  }
+
+  /* project names stay underlined, as on the resume; "Save as PDF" keeps them clickable */
+  .entry h3 a.name {
+    color: #000;
+    text-decoration: underline;
+    text-decoration-color: #000;
+    text-decoration-thickness: 1px;
+  }
+
+  a.tag {
+    color: #000;
+    text-decoration: none;
+  }
+
+  .pairs,
+  .experiments {
+    gap: 1.8mm;
+  }
+
+  .pairs > div {
+    grid-template-columns: 32mm minmax(0, 1fr);
+  }
+
+  .print-url {
+    display: block;
+    font-size: 9pt;
+    color: #333;
+    overflow-wrap: anywhere;
+  }
+}
