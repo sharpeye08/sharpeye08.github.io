@@ -138,6 +138,7 @@
       mug: { edge: "bottom-right", inset: 26, insetY: 34 },
       props: {
         pencil: { x: 200, y: 312 },
+        watch: { x: 350, y: 362 },
         "clip-a": { x: 346, y: 640 },
       },
     },
@@ -404,6 +405,14 @@
     const right = sp.x < (seen.x0 + seen.x1) / 2;
     let x = right ? sp.x + sp.w * 0.32 + gap + nw / 2 : sp.x - sp.w * 0.32 - gap - nw / 2;
     let y = sp.y;
+    if (seen.phone) {
+      // no room beside it, and the console would cover the card: above it, or below
+      const reach = sp.w * (name === "mug" ? 0.355 : 0.19); // the coaster's or the case's radius
+      x = sp.x;
+      // the mug lies low, right by the console's corner: its card may overlap the coaster's rim
+      y = name === "mug" ? sp.y - reach * 0.55 - nh / 2 : sp.y - reach - gap - nh / 2;
+      if (y - nh / 2 < seen.y0 + 12) y = sp.y + reach + gap + nh / 2;
+    }
     x = Math.min(Math.max(x, seen.x0 + nw / 2 + 12), seen.x1 - nw / 2 - 12);
     y = Math.min(Math.max(y, seen.y0 + nh / 2 + 12), seen.y1 - nh / 2 - 12);
     place(note, x, y, nw, nh, right ? 2 : -2);

@@ -345,11 +345,31 @@
     // moving under its own steam, or queued to go in
     if (b.mode === "push" || b.mode === "align" || b.mode === "out" || pending === b.id) return;
     const [px, py] = stageXY(e);
-    grab = { b, pid: e.pointerId, sx: px, sy: py, ox: px - b.x, oy: py - b.y, moved: false, pulled: false, lx: px, lt: performance.now(), vx: 0, px, py, ready: false };
+    const g = { b, pid: e.pointerId, sx: px, sy: py, ox: px - b.x, oy: py - b.y, moved: false, pulled: false, lx: px, lt: performance.now(), vx: 0, px, py, ready: false, held: false, holdTimer: 0 };
+    grab = g;
     try {
       el.setPointerCapture(e.pointerId);
     } catch (_) {}
+    // touch: a quick vertical swipe scrolls the page (touch-action: pan-y), so a
+    // drag starts with a short hold; then the cartridge lifts and the page stays put
+    if (e.pointerType === "touch") {
+      g.holdTimer = setTimeout(() => {
+        if (grab !== g || g.moved) return;
+        g.held = true;
+        if (b.mode !== "in") b.el.classList.add("is-lifted");
+        if (navigator.vibrate) navigator.vibrate(8);
+      }, HOLD_MS);
+    }
   });
+
+  // once a touch has held a cartridge, the finger drags it instead of scrolling
+  stage.addEventListener(
+    "touchmove",
+    (e) => {
+      if (grab && grab.held && e.cancelable) e.preventDefault();
+    },
+    { passive: false }
+  );
 
   stage.addEventListener("pointermove", (e) => {
     if (!grab || e.pointerId !== grab.pid) return;
@@ -392,6 +412,7 @@
   function endGrab(cancel) {
     const g = grab;
     grab = null;
+    clearTimeout(g.holdTimer);
     unit.classList.remove("is-ready");
     const b = g.b;
     b.el.classList.remove("is-lifted");
@@ -447,6 +468,7 @@
   ---------------------------------------------------------------- */
   const LCD_OFF = "#1c1a20";
   const OFF_END = 200;
+  const HOLD_MS = 160; // touch: how long a finger rests on a cartridge before it can be dragged
   const BOOT_FLOOD = 380;
   const BOOT_HOLD = 860;
   const BOOT_END = 1100;
@@ -555,7 +577,7 @@
     // lying on the desk there is no shelf to pick from yet: the console itself comes first
     const [title, help] = onDesk()
       ? ["Pick me up", coarse() ? "Tap the console." : "Click the console, or press Enter."]
-      : ["Insert a cartridge", coarse() ? "Tap one below, or drag it into the slot." : "Drag one into the slot, or click it."];
+      : ["Insert a cartridge", coarse() ? "Tap one below, or hold one and drag it into the slot." : "Drag one into the slot, or click it."];
     return `<div class="scr v-empty">
         <div class="mascot" aria-hidden="true">${mascot}</div>
         <h2>${title}</h2>

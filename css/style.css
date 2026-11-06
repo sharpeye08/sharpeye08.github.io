@@ -92,9 +92,9 @@ button {
   outline-color: var(--ink);
 }
 
-/* touch: vertical swipes over the shelf scroll the page (a drag that turns
-   into a scroll gets pointercancel, and the cartridge springs home); taps
-   and sideways drags still work */
+/* touch: a quick vertical swipe over the shelf scrolls the page; resting a
+   finger on a cartridge for a moment (app.js HOLD_MS) lifts it, and from
+   then on the finger drags it. Taps and sideways drags work at once */
 @media (pointer: coarse) {
   .stage .cart {
     touch-action: pan-y;

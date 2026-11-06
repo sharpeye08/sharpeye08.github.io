@@ -622,16 +622,38 @@ body.scene-moving.scene-landing .desk > :not(.paper, .pickup) {
   z-index: 5;
 }
 
-/* the mug and the watch can be picked up for a closer look: each opens a card */
+/* the mug and the watch can be picked up for a closer look: each opens a card.
+   Their images carry a wide margin for the shadow, so only the object
+   itself (.hit, a circle over the case or the coaster) takes clicks and
+   taps; the margin never covers the paper or the card next to it. */
 button.prop {
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   font: inherit;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--hit, 50%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
-  -webkit-tap-highlight-color: transparent;
+}
+
+.mug {
+  --hit: 74%; /* the coaster */
+}
+
+.watch {
+  --hit: 46%; /* the case and a bit of strap */
 }
 
 button.prop img {
