@@ -184,6 +184,52 @@ p.hint:hover {
   color: var(--off-muted);
 }
 
+/* Bug Squash: the game's canvas fills the screen, pixels kept square */
+.v-game {
+  padding: 0;
+  background: var(--label);
+}
+
+.v-game .game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+/* the visitor count: a pixel number with a snake running laps round it,
+   at the foot of the idle screen (app.js draws it) */
+.v-empty .visits {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--pad) * 0.9);
+  display: grid;
+  justify-items: center;
+  gap: calc(4 * var(--k));
+  opacity: 0.85;
+}
+
+.v-empty .visits[hidden] {
+  display: none;
+}
+
+.v-empty .snake {
+  display: block;
+  width: auto;
+  height: max(18px, 6.6cqw);
+  image-rendering: pixelated;
+}
+
+.v-empty .visits-label {
+  margin: 0;
+  font-size: max(10px, calc(10.5 * var(--k)));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--off-muted);
+}
+
 /* picked with the d-pad: the name in its colour, arrows either side */
 .v-pick h2 {
   max-width: 70cqw;

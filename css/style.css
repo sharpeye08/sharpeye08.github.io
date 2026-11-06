@@ -43,11 +43,13 @@
   --pixel: "Tiny5", "Pixelify Sans", ui-monospace, monospace; /* Tiny5 is loaded for the letter B only */
 
   /* sizes: console width drives everything (the console is 0.566 as wide as tall) */
-  --w: clamp(290px, min(30vw, calc((100svh - 236px) * 0.566)), 400px);
+  --w: clamp(290px, min(30vw, calc((100svh - 236px) * 0.566)), 520px);
   --cw: calc(var(--w) * 0.35); /* the reference's cartridge-to-console ratio */
   --ch: calc(var(--cw) * 0.84);
   --gap: calc(var(--w) * 0.17);
   --drop-visible: 0.55; /* share of the inserted cartridge that sticks out */
+  --drop: calc(var(--ch) * var(--drop-visible) + 8px); /* room under the console for it */
+  --con-h: calc(var(--w) * 1.7665); /* the console's height: 176.65cqw, see .console */
 }
 
 * {
@@ -117,26 +119,31 @@ button {
 /* ------------------------------------------------------------------
    Room layout
 ------------------------------------------------------------------- */
+/* the intro and the console group are one composition, centred on the desk:
+   the outer 1fr columns share what is left, the intro column is as wide as
+   its text, and the group column as wide as the shelf and the console */
 .room {
   min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(260px, 360px) 1fr;
+  grid-template-columns: 1fr minmax(260px, auto) calc(var(--w) * 0.2) auto 1fr;
   grid-template-rows: 1fr auto;
   grid-template-areas:
-    "intro stage"
-    "foot  foot";
-  column-gap: 32px;
+    ". intro . stage ."
+    ". foot  foot foot .";
   padding: 44px 48px 28px;
 }
 
+/* level with the console: the bottom padding matches the stage's, so the
+   intro centres on the console, not on the cartridge sticking out under it */
 .intro {
   grid-area: intro;
-  align-self: start;
+  align-self: center;
+  padding-bottom: var(--drop);
 }
 
 .intro h1 {
   margin: 0 0 14px;
-  font-size: 30px;
+  font-size: clamp(30px, calc(var(--w) * 0.085), 40px);
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -146,13 +153,17 @@ button {
 
 .intro p {
   margin: 0;
+  font-size: clamp(17px, calc(var(--w) * 0.04), 19px);
   color: var(--muted);
   max-width: 36ch;
   text-wrap: pretty;
 }
 
+/* the footer lines up with the composition above it; inline-size
+   containment keeps its one long line from widening the intro column */
 .foot {
   grid-area: foot;
+  contain: inline-size;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -204,16 +215,19 @@ button {
 /* ------------------------------------------------------------------
    Stage: shelf sockets on both sides of the console
 ------------------------------------------------------------------- */
+/* the first row takes whatever height the console has over the shelf, so the
+   shelf lines up with the console's bottom; the group is centred both ways
+   (scene.css places the Put it down button from the same numbers) */
 .stage {
   grid-area: stage;
   display: grid;
   grid-template-columns: var(--cw) var(--w) var(--cw);
-  grid-template-rows: 1fr repeat(var(--rows, 3), var(--ch));
+  grid-template-rows: auto repeat(var(--rows, 3), var(--ch));
   column-gap: var(--gap);
   row-gap: calc(var(--ch) * 0.18);
   justify-content: center;
   align-content: center;
-  padding-bottom: calc(var(--ch) * var(--drop-visible) + 8px);
+  padding-bottom: var(--drop);
 }
 
 /* .unit is the size container for the console, so cqw inside = % of console width */
@@ -859,6 +873,7 @@ button {
 
   .intro {
     justify-self: center;
+    padding-bottom: 0;
     text-align: center;
   }
 
@@ -870,6 +885,11 @@ button {
 
   .intro h1 {
     max-width: 18ch;
+    font-size: 30px;
+  }
+
+  .intro p {
+    font-size: inherit;
   }
 
   :root {

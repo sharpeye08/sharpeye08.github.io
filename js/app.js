@@ -135,6 +135,29 @@
       page() {
         tone(740, 0.04, 0.025);
       },
+      // Bug Squash (js/game.js)
+      game: {
+        jump() {
+          tone(420, 0.09, 0.028, "square", 0, 840);
+        },
+        bit() {
+          tone(1320, 0.05, 0.026);
+          tone(1760, 0.07, 0.026, "square", 0.05);
+        },
+        stomp() {
+          burst(0.03, 0.12, 900);
+          tone(190, 0.09, 0.06, "triangle", 0, 80);
+        },
+        hurt() {
+          tone(330, 0.22, 0.045, "sawtooth", 0, 90);
+        },
+        win() {
+          [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 0.03, "square", i * 0.09));
+        },
+        step() {
+          burst(0.006, 0.025, 4200);
+        },
+      },
     };
   })();
 
@@ -582,7 +605,120 @@
         <div class="mascot" aria-hidden="true">${mascot}</div>
         <h2>${title}</h2>
         <p>${help}</p>
+        <div class="visits" hidden><canvas class="snake" width="76" height="22" aria-hidden="true"></canvas><p class="visits-label">visitors</p></div>
       </div>`;
+  }
+
+  /* ---------------------------------------------------------------
+     Visitor count, on the idle screen: the number in a 3x5 pixel font
+     with a little snake running laps around it, eating bits and
+     growing. The count comes from Abacus (abacus.jasoncameron.dev), a
+     free counter: a browser counts once (localStorage), later visits
+     only read it. Local copies count separately, so testing doesn't
+     touch the real number. If it can't be reached, nothing shows.
+  ---------------------------------------------------------------- */
+  const GLYPHS = {
+    0: "111101101101111", 1: "010110010010111", 2: "111001111100111", 3: "111001111001111", 4: "101101111001001",
+    5: "111100111001111", 6: "111100111101111", 7: "111001010010010", 8: "111101111101111", 9: "111101111001111",
+  };
+  let visitsLoad = null;
+  function loadVisits() {
+    if (visitsLoad) return visitsLoad;
+    const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const ns = local ? "sharpeye08-dev" : "sharpeye08-github-io";
+    let seen = true;
+    try {
+      seen = localStorage.getItem("counted") === "1";
+    } catch (_) {} // no storage: read only, so reloads can't inflate it
+    const ctl = window.AbortController ? new AbortController() : null;
+    const timer = setTimeout(() => ctl && ctl.abort(), 6000);
+    visitsLoad = fetch(`https://abacus.jasoncameron.dev/${seen ? "get" : "hit"}/${ns}/visits`, ctl ? { signal: ctl.signal } : {})
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("visits " + r.status))))
+      .then((j) => {
+        if (typeof j.value !== "number") throw new Error("visits");
+        if (!seen) {
+          try {
+            localStorage.setItem("counted", "1");
+          } catch (_) {}
+        }
+        return j.value;
+      })
+      .finally(() => clearTimeout(timer));
+    visitsLoad.catch(() => {});
+    return visitsLoad;
+  }
+
+  function showVisits() {
+    const box = $(".v-empty .visits", view);
+    if (!box) return;
+    loadVisits().then(
+      (n) => {
+        if (!box.isConnected) return;
+        box.hidden = false;
+        box.setAttribute("aria-label", `${n.toLocaleString("en")} visitors`);
+        box.setAttribute("role", "img");
+        snake($(".snake", box), n);
+      },
+      () => {}
+    );
+  }
+
+  function snake(canvas, n) {
+    const digits = String(n).padStart(5, "0");
+    const C = 2; // px per cell
+    const W = Math.max(38, Math.ceil((digits.length * 8 + 18) / C)); // cells
+    const H = 11;
+    canvas.width = W * C;
+    canvas.height = H * C;
+    const ctx = canvas.getContext("2d");
+    const cream = "#efe6d8";
+    const amber = "#ffb454";
+    // the lap: clockwise round the edge cells
+    const path = [];
+    for (let x = 0; x < W; x++) path.push([x, 0]);
+    for (let y = 1; y < H; y++) path.push([W - 1, y]);
+    for (let x = W - 2; x >= 0; x--) path.push([x, H - 1]);
+    for (let y = H - 2; y > 0; y--) path.push([0, y]);
+    const P = path.length;
+    let head = Math.floor(P * 0.3);
+    let len = 10;
+    let food = (head + 18) % P;
+    const cell = (i, color, inset = 0) => {
+      const [x, y] = path[((i % P) + P) % P];
+      ctx.fillStyle = color;
+      ctx.fillRect(x * C + inset, y * C + inset, C - inset * 2, C - inset * 2);
+    };
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // faint dots mark the track
+      ctx.globalAlpha = 0.14;
+      for (let i = 0; i < P; i += 2) cell(i, cream);
+      ctx.globalAlpha = 1;
+      // the number, centred
+      const dw = digits.length * 8 - 2;
+      const ox = Math.round((canvas.width - dw) / 2);
+      const oy = Math.round((canvas.height - 10) / 2);
+      ctx.fillStyle = cream;
+      [...digits].forEach((d, k) => {
+        const g = GLYPHS[d];
+        for (let i = 0; i < 15; i++) if (g[i] === "1") ctx.fillRect(ox + k * 8 + (i % 3) * 2, oy + Math.floor(i / 3) * 2, 2, 2);
+      });
+      cell(food, amber);
+      for (let s = len - 1; s > 0; s--) cell(head - s, cream);
+      cell(head, amber);
+    }
+    draw();
+    if (reduced()) return;
+    const id = setInterval(() => {
+      if (!canvas.isConnected) return clearInterval(id);
+      if (document.hidden) return;
+      head = (head + 1) % P;
+      if (head === food) {
+        len = len >= 26 ? 10 : len + 1;
+        food = (head + 12 + Math.floor(Math.random() * (P - 30))) % P;
+      }
+      draw();
+    }, 90);
   }
 
   const onDesk = () => document.body.classList.contains("scene-table") || document.body.classList.contains("scene-paper");
@@ -591,6 +727,7 @@
   function renderEmpty(quiet) {
     paint(emptyHTML(), null);
     blinkMascot();
+    showVisits();
     if (quiet || onDesk()) return;
     if (selected) say(`${byId[selected].cart.label}. Press A to put it in.`);
     else say("No cartridge inserted. " + (coarse() ? "Tap one below." : "Pick one from the shelf."));
@@ -614,7 +751,13 @@
   }
 
   // the picture dithers away into a dark, switched-off screen
+  // a running game stops with its screen
+  const stopGame = () => {
+    if (st && st.ctl && st.ctl.stop) st.ctl.stop();
+  };
+
   function screenOff() {
+    stopGame();
     const token = ++screenToken;
     booting = false;
     current = null;
@@ -636,6 +779,7 @@
 
   // boot: colour floods up from the bottom, title card with a loading bar, then the content dithers in
   async function bootScreen(id, instant) {
+    stopGame();
     const token = ++screenToken;
     const c = byId[id].cart;
     current = id;
@@ -901,6 +1045,48 @@
         sfx.page();
         render();
       },
+    },
+
+    /* Bug Squash: a little platformer (js/game.js) on a 128x160 canvas.
+       The d-pad and A are passed through while held (hold); B pauses, and
+       on the title screen it backs out like everywhere else */
+    game: {
+      init: () => ({ ctl: null, held: 0 }),
+      render: (c) => `
+        <div class="scr v-game">
+          <canvas class="game" width="128" height="160" role="img" aria-label="${esc(c.title)}"></canvas>
+        </div>`,
+      mount(c, s) {
+        if (s.ctl) s.ctl.stop();
+        const canvas = $(".game", view);
+        if (!window.CartGame || !canvas) return;
+        s.ctl = window.CartGame.start(canvas, {
+          paper: c.color,
+          ink: c.ink || "#1d1a24",
+          cream: "#f6f0e2",
+          accent: "#ffb454",
+          sfx: sfx.game,
+          reduced: reduced(),
+        });
+        say(`${c.title}. Arrows or the d-pad move, A jumps, B pauses.`);
+      },
+      hold(c, s, act, down) {
+        if (!s.ctl || act === "b") return;
+        // Up (or W) jumps too, as players expect
+        const key = act === "up" ? "a" : act;
+        if (key === "a") s.held = performance.now();
+        s.ctl.input(key, down);
+      },
+      // A as a click with no press before it (keyboard on the on-screen button): a short hop
+      a(c, s) {
+        if (!s.ctl || performance.now() - s.held < 600) return;
+        s.ctl.input("a", true);
+        setTimeout(() => s.ctl && s.ctl.input("a", false), 140);
+      },
+      b(c, s) {
+        return s.ctl ? s.ctl.back() !== false : false;
+      },
+      dir() {},
     },
 
     /* Blog: one page per post, cycle with left/right */
@@ -1199,6 +1385,11 @@
     if (!current) renderEmpty();
   }
 
+  // a game wants to know what is held down, not just what was pressed
+  function hold(act, down) {
+    if (inserted && !booting && ctrl && ctrl.hold && current) ctrl.hold(slots[current].cart, st, act, down);
+  }
+
   // d-pad and A/B react on press, like hardware; Eject and Sound on click
   const held = new Map();
   controls.addEventListener("pointerdown", (e) => {
@@ -1208,6 +1399,7 @@
     if (DIRS.includes(act)) {
       held.set(e.pointerId, act);
       showDown(act, true);
+      hold(act, true);
       press(act);
     } else t.classList.add("pressed");
   });
@@ -1216,6 +1408,7 @@
     if (act) {
       held.delete(e.pointerId);
       showDown(act, false);
+      hold(act, false);
     }
     controls.querySelectorAll(".pill.pressed").forEach((el) => el.classList.remove("pressed"));
   };
@@ -1256,6 +1449,11 @@
     ArrowLeft: "left",
     ArrowRight: "right",
     Escape: "b",
+    // WASD move exactly like the arrows
+    w: "up",
+    a: "left",
+    s: "down",
+    d: "right",
     x: "a",
     z: "b",
     e: "eject",
@@ -1276,6 +1474,8 @@
     const a = document.activeElement;
     const onControl = !!a && a !== document.body && !!(a.closest && a.closest("a, button")) && !onSeated(a);
     let act = KEYS[k];
+    // E sits right by WASD: while the game is in, it doesn't eject (the Eject button still does)
+    if (act === "eject" && current && slots[current].cart.type === "game") return;
     if (!act && (k === "Enter" || k === " ") && !onControl) act = "a";
     if (!act) return;
     e.preventDefault();
@@ -1283,6 +1483,7 @@
     if (keysDown.has(k) || e.repeat) return;
     keysDown.set(k, act);
     showDown(act, true);
+    hold(act, true);
     press(act);
   });
   document.addEventListener("keyup", (e) => {
@@ -1293,10 +1494,12 @@
     if (!act) return;
     keysDown.delete(k);
     showDown(act, false);
+    hold(act, false);
   });
 
   // leaving the page lets go of everything, so no key, button or cartridge stays held
   function letGo() {
+    for (const act of new Set([...keysDown.values(), ...held.values()])) hold(act, false);
     keysDown.clear();
     held.clear();
     controls.querySelectorAll(".pressed").forEach((el) => el.classList.remove("pressed"));

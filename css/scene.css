@@ -982,34 +982,6 @@ button.prop:focus-visible {
 }
 
 /* ------------------------------------------------------------------
-   Dark mode: the desk in the evening. Only the lamp is on, so things
-   catch less light the further they lie from it (--lit, from js/scene.js;
-   the wood is dimmed the same way in css/desk.css). Paper is dimmed, not
-   inverted, so nothing glares.
-------------------------------------------------------------------- */
-@media (prefers-color-scheme: dark) {
-  .desk > :is(.pad, .card, .sticky, .paper, .polaroid, .prop) {
-    filter: brightness(var(--lit, 0.8));
-  }
-
-  /* the card a click opens is for reading */
-  .desk > .note {
-    filter: brightness(0.9);
-  }
-
-  body:is(.scene-table, .scene-paper) .unit {
-    filter: brightness(calc(var(--lit, 0.8) + 0.06));
-  }
-
-  body.scene-moving .unit {
-    transition:
-      transform var(--lift) var(--scene-ease),
-      scale 220ms ease,
-      filter var(--lift) ease;
-  }
-}
-
-/* ------------------------------------------------------------------
    Put the console down
 ------------------------------------------------------------------- */
 .putdown,
@@ -1044,12 +1016,18 @@ button.prop:focus-visible {
   border-color: var(--amber);
 }
 
+/* beside the console's top edge, over the right-hand shelf. Its containing
+   block is the stage's grid area (.room is a positioned grid): the console is
+   centred across it, and the console plus the room under it (--drop) are
+   centred down it (css/style.css, .stage) */
 .putdown {
   display: none;
   position: absolute;
   z-index: 3;
-  top: 14px;
-  right: 20px;
+  grid-area: stage;
+  top: calc((100% - var(--drop) - var(--con-h)) / 2);
+  left: calc(50% + var(--w) / 2 + var(--gap));
+  white-space: nowrap; /* a little wider than the shelf on smaller screens */
 }
 
 body.scene-hand .putdown {
@@ -1167,13 +1145,6 @@ body.scene-landing .reader-page {
   z-index: 1;
   top: 9px;
   right: 12px;
-}
-
-@media (max-width: 1100px) {
-  .putdown {
-    top: 12px;
-    right: 16px;
-  }
 }
 
 /* ------------------------------------------------------------------

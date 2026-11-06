@@ -2,7 +2,7 @@ window.PROFILE = {
   name: "Dev Bansal",
   deviceName: "Dev Bansal",
   headline: "I turn research ideas into shipped features.",
-  intro: "I'm 19, studying computer science and data science at UPES. I intern at Ocally as an ML and AI engineer, building evals and research agents, and I make computer vision projects on the side.",
+  intro: "I'm 20, studying computer science and data science at UPES. I intern at Ocally as an ML and AI engineer, building evals and research agents, and I build my own agents on the side.",
   status: "ML and AI engineer intern at Ocally.",
   links: [
     { label: "LinkedIn", href: "https://www.linkedin.com/in/devbansal08/" },
@@ -21,9 +21,9 @@ window.CARTRIDGES = [
     type: "dialog",
     speaker: "Dev",
     lines: [
-      "Hi, I'm Dev Bansal. I study CS and Data Science at UPES in Dehradun.",
+      "Hi, I'm Dev Bansal. I'm 20, and I study CS and Data Science at UPES in Dehradun.",
       "I intern at Ocally as an ML and AI engineer, building evals and research agents.",
-      "On the side I rebuild papers from scratch, like YOLOv1, and build computer vision projects like anzen.",
+      "On the side I build my own agents and rebuild papers from scratch, like YOLOv1.",
       "I work with Python, PyTorch, LangGraph and OpenCV. Pick another cartridge to see more."
     ]
   },
@@ -234,5 +234,14 @@ window.CARTRIDGES = [
       { label: "X", handle: "@sharpeye_wnl", href: "https://x.com/sharpeye_wnl" },
       { label: "GitHub", handle: "sharpeye08", href: "https://github.com/sharpeye08" }
     ]
+  },
+  {
+    id: "game",
+    label: "Bug Squash",
+    color: "#ee6c5f",
+    ink: "#1d1a24",
+    icon: "game",
+    type: "game",
+    title: "Bug Squash"
   }
 ];

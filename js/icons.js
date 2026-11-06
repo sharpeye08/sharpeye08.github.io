@@ -71,6 +71,29 @@ window.PIXEL_ICONS = {
     ]
   },
 
+  // Bug Squash (the game): a little game pad, d-pad left, two buttons right. Label bg: coral #ee6c5f
+  game: {
+    palette: { k: "#1d1a24", c: "#f6f0e2" },
+    rows: [
+      "................",
+      "................",
+      "................",
+      "...kkkkkkkkkk...",
+      "..kcccccccccck..",
+      ".kcccccccccccck.",
+      ".kcckccccccckck.",
+      ".kckkkcccckccck.",
+      ".kcckccccccccck.",
+      ".kcccccccccccck.",
+      ".kcccckkkkcccck.",
+      "..kkkk....kkkk..",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+
   // Anzen (road safety): triangular warning sign with "!". Label bg: amber #f2b544
   anzen: {
     palette: { k: "#1d1a24", c: "#f6f0e2" },

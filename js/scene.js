@@ -83,27 +83,32 @@
      centres, r is the turn in degrees; the console's width sets its height,
      the paper is placed from the console, and the mug is cropped by an edge
      of the screen (inset from that edge, in design pixels). props are the
-     rendered things, at their own size times s (and k); a missing one is left off. */
+     rendered things, at their own size times s (and k); a missing one is left
+     off, and one with edge: "left" is cropped by the left edge the same way.
+     spread: on a screen wider than the frame, things move out from the
+     console into the spare width, up to max design pixels, staying margin
+     inside the screen (see layout()). */
   const LAYOUTS = {
     wide: {
       w: 1240,
       h: 860,
       s: 1,
       console: { x: 590, y: 468, w: 220 },
-      pad: { x: 205, y: 280, w: 272, h: 372, r: -4, title: 33, text: 15.5 },
-      card: { x: 226, y: 690, w: 262, h: 150, r: 5 },
+      pad: { x: 205, y: 274, w: 272, h: 372, r: -4, title: 33, text: 15.5 },
+      card: { x: 226, y: 700, w: 262, h: 150, r: 5 },
       sticky: { x: 424, y: 560, w: 132, h: 132, r: 7 },
       polaroid: { x: 478, y: 142, w: 150, h: 182, r: -7 },
       mug: { edge: "right", inset: 62, y: 140 },
+      spread: { max: 180, margin: 28 },
       props: {
         pen: { x: 1012, y: 640 },
-        pencil: { x: 212, y: 548 },
+        pencil: { x: 1100, y: 805 },
         watch: { x: 800, y: 150 },
-        glasses: { x: 1125, y: 795 },
+        glasses: { edge: "left", inset: 60, y: 544 },
         earbuds: { x: 1142, y: 428 },
         duck: { x: 640, y: 780, k: 0.8 },
         "clip-a": { x: 930, y: 318 },
-        "clip-b": { x: 404, y: 700 },
+        "clip-b": { x: 404, y: 710 },
       },
     },
     tall: {
@@ -116,6 +121,7 @@
       sticky: { x: 146, y: 880, w: 132, h: 132, r: -7 },
       polaroid: { x: 705, y: 470, w: 150, h: 182, r: 6 },
       mug: { edge: "right", inset: 58, y: 150 },
+      spread: { max: 140, margin: 24 },
       props: {
         pen: { x: 520, y: 330 },
         pencil: { x: 205, y: 470 },
@@ -212,17 +218,6 @@
 
   // the console's centre in the frame; things slide away from it
   let hub = { x: 0, y: 0 };
-  // where the frame sits on the page, for the lamp (css/desk.css): it stands
-  // at (-14u, -18u) from the page's corner, its light reaching ~150u x 112u
-  let frameAt = { x: 0, y: 0, f: 1, u: 15 };
-
-  // how much lamp light falls here (dark mode dims things by it: --lit)
-  function lit(x, y) {
-    const { u } = frameAt;
-    const px = frameAt.x + x * frameAt.f + 14 * u;
-    const py = frameAt.y + y * frameAt.f + 18 * u;
-    return (0.92 - 0.3 * Math.min(1, Math.hypot(px / (150 * u), py / (112 * u)))).toFixed(3);
-  }
 
   function place(el, x, y, w, h, r) {
     if (!el) return;
@@ -237,7 +232,6 @@
     const d = Math.hypot(dx, dy) || 1;
     st.setProperty("--ax", `${fix((dx / d) * ASIDE)}px`);
     st.setProperty("--ay", `${fix((dy / d) * ASIDE)}px`);
-    st.setProperty("--lit", lit(x, y));
   }
 
   function layout() {
@@ -266,8 +260,6 @@
     const c = L.console;
     const ch = (c.w * u.h) / u.w;
     hub = { x: c.x, y: c.y };
-    frameAt = { x: r.x + ox, y: r.y + oy, f, u: Math.min(Math.max(innerWidth, innerHeight) / 100, 15) };
-    unit.style.setProperty("--lit", lit(c.x, c.y));
     place(pick, c.x, c.y, c.w, ch, CON_TURN);
     pick.style.setProperty("--round", `${fix(c.w * 0.07)}px`);
     const ux = u.x - r.x + u.w / 2;
@@ -279,13 +271,36 @@
     const py = c.y + p.pdy;
     place(paper, px, py, p.pw, p.ph, SHEET.turn);
 
+    /* The spare width: on a screen wider than the frame, the wood showing past
+       each side of it (capped by spread.max). Things move out into it, away
+       from the console: hardly at all close to it, by all of it from most of
+       the way to the frame's edge, smoothly in between (so their order holds
+       and gaps only grow), never closer than spread.margin to the screen's
+       edge, and never back in past their design spot. */
+    const x0 = -ox / f; // the screen's left and right edges, in design pixels
+    const x1 = (W - ox) / f;
+    const sp = L.spread;
+    const spare = sp && ox > 0 ? Math.min(ox / f, sp.max) : 0;
+    const out = (x, half) => {
+      if (!spare) return x;
+      const dx = x - c.x;
+      const reach = dx < 0 ? c.x : L.w - c.x; // the console to that side of the frame
+      const t = Math.min(Math.max((Math.abs(dx) / reach - 0.15) / 0.65, 0), 1);
+      const want = spare * t * t * (3 - 2 * t);
+      const room = dx < 0 ? x - half - (x0 + sp.margin) : x1 - sp.margin - (x + half);
+      return x + Math.sign(dx) * Math.min(want, Math.max(0, room));
+    };
+    // half the width of a turned box
+    const halfW = (q) => (q.w / 2) * Math.abs(Math.cos(rad(q.r))) + (q.h / 2) * Math.abs(Math.sin(rad(q.r)));
+
     const { pad, card, sticky, polaroid } = items;
-    place(pad, L.pad.x, L.pad.y, L.pad.w, L.pad.h, L.pad.r);
+    place(pad, out(L.pad.x, halfW(L.pad)), L.pad.y, L.pad.w, L.pad.h, L.pad.r);
     if (pad) {
       pad.style.setProperty("--title", `${L.pad.title}px`);
       pad.style.setProperty("--text", `${L.pad.text}px`);
     }
-    place(card, L.card.x, L.card.y, L.card.w, L.card.h, L.card.r);
+    place(card, out(L.card.x, halfW(L.card)), L.card.y, L.card.w, L.card.h, L.card.r);
+    // the sticky note is the console's label: it stays tucked by it, as the paper does
     place(sticky, L.sticky.x, L.sticky.y, L.sticky.w, L.sticky.h, L.sticky.r);
     if (sticky) {
       // its hand-drawn arrow points at the console
@@ -295,7 +310,7 @@
     if (polaroid) {
       const q = L.polaroid;
       polaroid.hidden = !q;
-      if (q) place(polaroid, q.x, q.y, q.w, q.h, q.r);
+      if (q) place(polaroid, out(q.x, halfW(q)), q.y, q.w, q.h, q.r);
     }
 
     // the rendered props, upright (their light is baked in)
@@ -309,14 +324,17 @@
       if (!spot) continue;
       const [pw, ph] = propSize(name);
       const k = (spot.k || 1) * s;
-      spots[name] = { x: spot.x, y: spot.y, w: pw * k, h: ph * k };
-      place(el, spot.x, spot.y, spots[name].w, spots[name].h, 0);
+      const w = pw * k;
+      // one may be cropped by the left edge, as the mug is by the right
+      const x = spot.edge === "left" ? x0 + spot.inset : out(spot.x, w / 2);
+      spots[name] = { x, y: spot.y, w, h: ph * k };
+      place(el, x, spot.y, w, spots[name].h, 0);
     }
     const mug = props.mug;
     if (mug) {
       // cropped by the edge of the screen, wherever that falls in the frame
       const m = L.mug;
-      const mx = (W - ox) / f - m.inset;
+      const mx = x1 - m.inset;
       const my = m.edge === "bottom-right" ? (H - oy) / f - m.insetY : m.y;
       const [gw, gh] = propSize("mug");
       spots.mug = { x: mx, y: my, w: gw * s, h: gh * s };
@@ -334,7 +352,7 @@
       ws.setProperty("--sub", pc(WATCH.sub.r / WATCH.dial));
     }
     // what part of the frame is on screen (the mug may lie past its edge)
-    seen = { x0: -ox / f, x1: (W - ox) / f, y0: -oy / f, y1: (H - oy) / f, phone: kind === "phone" };
+    seen = { x0, x1, y0: -oy / f, y1: (H - oy) / f, phone: kind === "phone" };
     if (note && !note.hidden && noteFor) aim(noteFor);
 
     geo = {

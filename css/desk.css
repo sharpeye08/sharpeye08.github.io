@@ -28,11 +28,9 @@
    light, without a seam. The tile is authored at the ambient level, so
    --wood (its average) is the colour of the unlit desk.
 
-   Dark mode (prefers-color-scheme: dark) is the same desk in the evening:
-   the room light is off and only the lamp is on, so a multiply layer
-   (top) dims the desk more the further it lies from the lamp. js/scene.js
-   dims each object the same way (--lit), and color-scheme tells browsers
-   not to apply their own automatic darkening, which inverts the papers.
+   The site always shows this light design, even when the device is set
+   to dark mode. color-scheme: only light tells browsers not to apply
+   their own automatic darkening, which would turn the papers dark.
 
    Contrast, measured on the bare desk behind the intro and the footer of
    index.html?c=about at 1280x800, 1440x900 and 1920x1080: cream #f4ead8 is
@@ -41,7 +39,7 @@
    average desk colour behind the intro paragraph, 5.6:1+ at the footer.
 ------------------------------------------------------------------- */
 :root {
-  color-scheme: light dark;
+  color-scheme: only light;
   --wood: #452c1b; /* average colour of the tile, also the fallback */
   /* the lamp's tint: at full strength the pool lifts red 1.75x,
      green 1.65x, blue 1.52x (warm tungsten against a neutral room) */
@@ -78,44 +76,6 @@ html {
   image-rendering: auto;
 }
 
-/* evening: the same layers under a room-dimming multiply, bright by the
-   lamp and about 45% at the far side */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --wood: #2b1b10;
-  }
-
-  html {
-    background-image:
-      radial-gradient(calc(175 * var(--u)) calc(135 * var(--u)) at calc(-14 * var(--u)) calc(-18 * var(--u)),
-        rgb(236, 229, 220) 0%,
-        rgb(214, 205, 195) 22%,
-        rgb(178, 168, 158) 45%,
-        rgb(140, 131, 123) 70%,
-        rgb(114, 106, 100) 100%),
-      radial-gradient(calc(34 * var(--u)) calc(22 * var(--u)) at calc(8 * var(--u)) 0, rgba(var(--lamp-sheen), 0.05), rgba(var(--lamp-sheen), 0.02) 50%, rgba(var(--lamp-sheen), 0)),
-      radial-gradient(calc(30 * var(--u)) calc(22 * var(--u)) at calc(17 * var(--u)) calc(7 * var(--u)), rgba(var(--lamp-sheen), 0.03), rgba(var(--lamp-sheen), 0)),
-      radial-gradient(calc(150 * var(--u)) calc(112 * var(--u)) at calc(-14 * var(--u)) calc(-18 * var(--u)),
-        rgba(var(--lamp), 1) 0%,
-        rgba(var(--lamp), 0.953) 10%,
-        rgba(var(--lamp), 0.831) 20%,
-        rgba(var(--lamp), 0.671) 30%,
-        rgba(var(--lamp), 0.509) 40%,
-        rgba(var(--lamp), 0.367) 50%,
-        rgba(var(--lamp), 0.252) 60%,
-        rgba(var(--lamp), 0.161) 70%,
-        rgba(var(--lamp), 0.085) 80%,
-        rgba(var(--lamp), 0.016) 90%,
-        rgba(var(--lamp), 0) 100%),
-      linear-gradient(to right, rgba(150, 140, 130, 0) 35%, rgba(150, 140, 130, 0.35)),
-      url("../assets/desk.webp");
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 1600px auto;
-    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 50% 0;
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
-    background-blend-mode: multiply, screen, screen, color-dodge, multiply, normal;
-  }
-}
-
 /* the desk lives on the root; the body stays see-through so it shows */
 body {
   background: none;
@@ -126,11 +86,5 @@ body {
 @media (max-width: 720px) {
   html {
     background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 1200px auto;
-  }
-}
-
-@media (max-width: 720px) and (prefers-color-scheme: dark) {
-  html {
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 1200px auto;
   }
 }
