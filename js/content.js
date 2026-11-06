@@ -188,17 +188,6 @@ window.CARTRIDGES = [
         stack: "Python",
         details: "An implementation of the AlexNet architecture.",
         links: [{ label: "Source on GitHub", href: "https://github.com/sharpeye08/AlexNet-implementation" }]
-      },
-      {
-        group: "Lab",
-        tag: "Classic ML",
-        icon: "lab",
-        kicker: "classic machine learning",
-        title: "Credit Card Fraud Detection",
-        blurb: "Logistic regression that flags fraudulent transactions.",
-        status: "Classic ML",
-        details: "A logistic regression model that classifies a transaction as fraud or not.",
-        links: [{ label: "Source on GitHub", href: "https://github.com/sharpeye08/Credit-Card-Fraud-Detection" }]
       }
     ]
   },
