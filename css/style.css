@@ -533,6 +533,13 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* held down in a game: a thumb that drifts must not start a page scroll,
+   which cancels the press and lets go of the button */
+.dpad .dp,
+.ab .round {
+  touch-action: none;
+}
+
 /* D-pad: one moulded cross that tilts toward the pressed arm;
    the four buttons on top are invisible hit areas */
 .dpad {

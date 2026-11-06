@@ -152,6 +152,7 @@
   const ASIDE = 48; // how far things slide away from the console, in design pixels
 
   let spots = {}; // where each prop lies, in design pixels
+  let conBox = null; // the lying console's turned box, in design pixels (a note must not slip under it)
   let seen = null; // the part of the frame on screen
   let note = null; // the little card the mug and the watch open
   let noteFor = "";
@@ -260,6 +261,10 @@
     const c = L.console;
     const ch = (c.w * u.h) / u.w;
     hub = { x: c.x, y: c.y };
+    const ct = rad(CON_TURN);
+    const chx = (c.w / 2) * Math.abs(Math.cos(ct)) + (ch / 2) * Math.abs(Math.sin(ct));
+    const chy = (c.w / 2) * Math.abs(Math.sin(ct)) + (ch / 2) * Math.abs(Math.cos(ct));
+    conBox = { x0: c.x - chx, x1: c.x + chx, y0: c.y - chy, y1: c.y + chy };
     place(pick, c.x, c.y, c.w, ch, CON_TURN);
     pick.style.setProperty("--round", `${fix(c.w * 0.07)}px`);
     const ux = u.x - r.x + u.w / 2;
@@ -423,7 +428,10 @@
     const right = sp.x < (seen.x0 + seen.x1) / 2;
     let x = right ? sp.x + sp.w * 0.32 + gap + nw / 2 : sp.x - sp.w * 0.32 - gap - nw / 2;
     let y = sp.y;
-    if (seen.phone) {
+    // beside it, the card would slip under the console (the tall layout's watch): above or below instead
+    const cx = Math.min(Math.max(x, seen.x0 + nw / 2 + 12), seen.x1 - nw / 2 - 12);
+    const underConsole = !!conBox && cx - nw / 2 < conBox.x1 && cx + nw / 2 > conBox.x0 && y - nh / 2 < conBox.y1 && y + nh / 2 > conBox.y0;
+    if (seen.phone || underConsole) {
       // no room beside it, and the console would cover the card: above it, or below
       const reach = sp.w * (name === "mug" ? 0.355 : 0.19); // the coaster's or the case's radius
       x = sp.x;

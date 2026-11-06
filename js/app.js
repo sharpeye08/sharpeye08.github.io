@@ -356,9 +356,10 @@
     return [e.clientX - r.left, e.clientY - r.top];
   };
 
-  // pointer presses shouldn't move focus; keyboard focus still works
+  // pointer presses shouldn't move focus; keyboard focus still works. On the console's
+  // buttons too: a clicked Eject kept focus, and the next Space or Enter (A) ejected again
   stage.addEventListener("mousedown", (e) => {
-    if (e.target.closest(".cart")) e.preventDefault();
+    if (e.target.closest(".cart, .controls [data-act]")) e.preventDefault();
   });
 
   stage.addEventListener("pointerdown", (e) => {
