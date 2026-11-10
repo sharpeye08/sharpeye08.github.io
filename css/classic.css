@@ -19,7 +19,7 @@
   --peri-wash: #e9ebf8;
 
   --sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --pixel: "Pixelify Sans", ui-monospace, monospace;
+  --pixel: "Jersey 25", "Pixelify Sans", ui-monospace, monospace; /* Jersey 25 is loaded for C and c only */
 
   --pad: clamp(20px, 6vw, 64px); /* paper margin */
   --measure: 66ch; /* about 75 characters of body text per line */
@@ -125,6 +125,7 @@ code {
 /* styled like a button on the console shell */
 .console-link {
   font-family: var(--pixel);
+  font-variant-ligatures: none;
   font-size: 0.9375rem;
   line-height: 1;
   color: var(--ink);

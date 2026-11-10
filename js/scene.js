@@ -673,7 +673,10 @@
     });
   }
 
-  // made on the first sign of interest, so the main page stays light
+  /* Made once the page has loaded and gone idle (or sooner, on the first sign
+     of interest), so the main page stays light. It stays transparent until its
+     load event, when classic.css is in: until then the lifted sheet is plain
+     paper, never the unstyled page. */
   function loadFrame() {
     buildReader();
     if (frame) return;
@@ -682,6 +685,7 @@
     frame.title = "Dev Bansal, one-page portfolio";
     frame.src = "classic.html?embed=1";
     frame.addEventListener("load", () => {
+      frame.classList.add("is-ready");
       // Escape inside the sheet reaches this page's listener only through here
       try {
         frame.contentWindow.addEventListener("keydown", (e) => {
@@ -691,6 +695,8 @@
           }
         });
       } catch (_) {}
+      // lifted before it was ready: the button has held focus until now
+      if (state === "paper" && document.activeElement === page.firstElementChild) focusFrame();
     });
     page.appendChild(frame);
   }
@@ -756,7 +762,9 @@
       show("paper");
       pose(p, "flat");
       page.style.clipPath = "";
-      focusFrame();
+      // a frame still loading can't take Escape yet; the button holds focus until it can
+      if (frame.classList.contains("is-ready")) focusFrame();
+      else page.firstElementChild.focus({ preventScroll: true });
     };
     if (instant || reduced()) return end();
     pose(p, "lying");
@@ -824,6 +832,14 @@
     el.addEventListener("pointerenter", loadFrame, { once: true });
     el.addEventListener("focus", loadFrame, { once: true });
   }
+  // otherwise it loads quietly once the page is idle (not when the visitor asks to save data)
+  const preload = () => {
+    if (navigator.connection && navigator.connection.saveData) return;
+    if (window.requestIdleCallback) requestIdleCallback(loadFrame, { timeout: 2000 });
+    else setTimeout(loadFrame, 600);
+  };
+  if (document.readyState === "complete") preload();
+  else window.addEventListener("load", preload, { once: true });
 
   // capture phase on window runs before app.js's document listeners
   window.addEventListener(

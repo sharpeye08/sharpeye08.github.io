@@ -40,7 +40,9 @@
   --led-on: #ffb454; /* warm amber: no green lights anywhere */
 
   --sans: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --pixel: "Tiny5", "Pixelify Sans", ui-monospace, monospace; /* Tiny5 is loaded for the letter B only */
+  /* Tiny5 is loaded for the letter B only, Jersey 25 for C and c. Pixel text also
+     sets font-variant-ligatures: none, as Pixelify's "fi" reads as "A" */
+  --pixel: "Tiny5", "Jersey 25", "Pixelify Sans", ui-monospace, monospace;
 
   /* sizes: console width drives everything (the console is 0.566 as wide as tall) */
   --w: clamp(290px, min(30vw, calc((100svh - 236px) * 0.566)), 520px);

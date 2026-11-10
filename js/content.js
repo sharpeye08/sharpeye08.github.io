@@ -201,6 +201,13 @@ window.CARTRIDGES = [
     title: "Blog",
     items: [
       {
+        title: "Context engineering from first principles",
+        kind: "A beginner's guide",
+        by: "On X, November 2026",
+        summary: "Deciding what goes into an agent's limited context window: the attention budget, tools that fetch context, and how context fails.",
+        href: "https://x.com/sharpeye_wnl/status/2119999111596532086"
+      },
+      {
         title: "Building the brain logic of AI agents",
         kind: "A beginner's guide",
         by: "On X, January 2026",
